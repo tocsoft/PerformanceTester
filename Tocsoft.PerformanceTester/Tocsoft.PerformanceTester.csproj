@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <AssemblyName>Tocsoft.PerformanceTester.TestAdapter</AssemblyName>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.ObjectPool" Version="3.0.0" />
+    <PackageReference Include="Microsoft.TestPlatform.ObjectModel" Version="16.4.0" />
+  </ItemGroup>
+  
+</Project>
