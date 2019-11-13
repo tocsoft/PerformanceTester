@@ -8,7 +8,7 @@ on:
 jobs:
   publish:
 
-    runs-on: [ubuntu-latest]
+    runs-on: [windows-latest]
 
     steps:
     - uses: actions/checkout@v1
@@ -20,12 +20,12 @@ jobs:
     - name: Build with dotnet
       run: dotnet pack --configuration Release
 
-    - name: Publish package
-      run: curl -vX PUT -u "${{github.actor}}:TOKEN" -F package=@**/bin/Release/*.nupkg https://nuget.pkg.github.com/${{github.actor}}/
-  #  - name: Configure feed
-  #    if: success()
-  #    run: nuget source Add -Name "GitHub" -Source "https://nuget.pkg.github.com/${{github.actor}}/index.json" -UserName ${{github.actor}} -Password ${{ secrets.GITHUB_TOKEN }}
-  #  - name: Publish to nightly feed
-  #    if: success()
-  #    run: nuget push  -Source "GitHub" **/bin/Release/*.nupkg
+  #  - name: Publish package
+  #    run: curl -vX PUT -u "${{github.actor}}:TOKEN" -F package=@**/bin/Release/*.nupkg https://nuget.pkg.github.com/${{github.actor}}/
+    - name: Configure feed
+      if: success()
+      run: nuget.exe source Add -Name "GitHub" -Source "https://nuget.pkg.github.com/${{github.actor}}/index.json" -UserName ${{github.actor}} -Password ${{ secrets.GITHUB_TOKEN }}
+    - name: Publish to nightly feed
+      if: success()
+      run: nuget.exe push  -Source "GitHub" **/bin/Release/*.nupkg
     
