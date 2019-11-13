@@ -3,6 +3,14 @@
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
     <AssemblyName>Tocsoft.PerformanceTester.TestAdapter</AssemblyName>
+    <PackageId>Tocsoft.PerformanceTester</PackageId>
+    <Authors>Tocsoft</Authors>
+    <Product>Tocsoft.PerformanceTester</Product>
+    <Description>A dotnet testing framework for simple load/batch testing/timing scenarios.</Description>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageProjectUrl>https://github.com/tocsoft/PerformanceTester</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/tocsoft/PerformanceTester</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
   </PropertyGroup>
 
   <ItemGroup>
