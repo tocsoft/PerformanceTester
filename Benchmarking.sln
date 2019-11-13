@@ -5,7 +5,17 @@ VisualStudioVersion = 16.0.29319.158
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Benchmarking.Benchmarks", "Benchmarking.Benchmarks\Benchmarking.Benchmarks.csproj", "{ECDC602B-4B48-4534-9161-17D0651DFC43}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Tocsoft.PerformanceTester", "Tocsoft.PerformanceTester\Tocsoft.PerformanceTester.csproj", "{518436FA-73B1-4D85-8C9E-5FA6993FDEC3}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Tocsoft.PerformanceTester", "Tocsoft.PerformanceTester\Tocsoft.PerformanceTester.csproj", "{518436FA-73B1-4D85-8C9E-5FA6993FDEC3}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Tocsoft.PerformanceTester.Tests", "Tocsoft.PerformanceTester.Tests\Tocsoft.PerformanceTester.Tests.csproj", "{CCCEA448-0478-4664-A09C-DFD24C1B589C}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = ".github", ".github", "{10B903EA-877A-484A-BC9A-24E68EAF07D1}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "workflows", "workflows", "{671DA48E-7643-4BAC-80FD-7CE1E7D7732A}"
+	ProjectSection(SolutionItems) = preProject
+		.github\workflows\build-PRs.yml = .github\workflows\build-PRs.yml
+		.github\workflows\ci-publish.yml = .github\workflows\ci-publish.yml
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -21,9 +31,16 @@ Global
 		{518436FA-73B1-4D85-8C9E-5FA6993FDEC3}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{518436FA-73B1-4D85-8C9E-5FA6993FDEC3}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{518436FA-73B1-4D85-8C9E-5FA6993FDEC3}.Release|Any CPU.Build.0 = Release|Any CPU
+		{CCCEA448-0478-4664-A09C-DFD24C1B589C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{CCCEA448-0478-4664-A09C-DFD24C1B589C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{CCCEA448-0478-4664-A09C-DFD24C1B589C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{CCCEA448-0478-4664-A09C-DFD24C1B589C}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{671DA48E-7643-4BAC-80FD-7CE1E7D7732A} = {10B903EA-877A-484A-BC9A-24E68EAF07D1}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {3B261DBF-B9CC-437F-A1DF-1A6494C9540E}

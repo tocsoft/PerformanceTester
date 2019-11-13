@@ -3,8 +3,7 @@ name: Publish
 on: 
   push:
     branches: master
-#    paths: 
-#      - 'Tocsoft.PerformanceTester/**'
+
 jobs:
   publish:
 
@@ -12,21 +11,22 @@ jobs:
 
     steps:
     - uses: actions/checkout@v1
-   # - name: Setup .NET Core
-   #   uses: actions/setup-dotnet@v1
-   #   with:
-   #     dotnet-version: 2.2.108
       
     - name: Build with dotnet
       run: dotnet pack --configuration Release
 
-  #  - name: Publish package
-  #    run: curl -vX PUT -u "${{github.actor}}:TOKEN" -F package=@**/bin/Release/*.nupkg https://nuget.pkg.github.com/${{github.actor}}/
+    - name: Run unit tests
+      if: success()
+      run: dotnet test Tocsoft.PerformanceTester.Tests/Tocsoft.PerformanceTester.Tests.csproj --no-build  --configuration Release
+
     - name : install nuget
+      if: success()
       uses: warrenbuckley/Setup-Nuget@v1
+
     - name: Configure feed
       if: success()
       run: nuget.exe source Add -Name "GitHub" -Source "https://nuget.pkg.github.com/${{github.actor}}/index.json" -UserName ${{github.actor}} -Password ${{ secrets.GITHUB_TOKEN }}
+
     - name: Publish to nightly feed
       if: success()
       run: nuget.exe push  -Source "GitHub" **/bin/Release/*.nupkg
