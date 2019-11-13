@@ -4,7 +4,7 @@ on:
   push:
     branches: master
     paths: 
-      - 'Tocsoft.PerformanceTester\**'
+      - 'Tocsoft.PerformanceTester/**'
 jobs:
   publish:
 
@@ -18,7 +18,7 @@ jobs:
         dotnet-version: 2.2.108
       
     - name: Build with dotnet
-      run: dotnet pack --configuration Release -o ..\output
+      run: dotnet pack --configuration Release -o ../output
 
     - name: setup nuget
       if: success()
@@ -28,5 +28,5 @@ jobs:
       run: nuget source Add -Name "GitHub" -Source "https://nuget.pkg.github.com/${{github.actor}}/index.json" -UserName ${{github.actor}} -Password ${{ secrets.GITHUB_TOKEN }}
     - name: Publish to nightly feed
       if: success()
-      run: nuget push  -Source "GitHub" output\*.nupkg
+      run: nuget push  -Source "GitHub" output/*.nupkg
     
