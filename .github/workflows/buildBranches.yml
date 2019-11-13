@@ -14,8 +14,8 @@ jobs:
       with:
         dotnet-version: 2.2.108
     - name: Build with dotnet
-      run: dotnet pack --configuration Release
+      run: dotnet pack --configuration Release -o output
     - uses: actions/upload-artifact@master
       with:
-        name: Tocsoft.PerformanceTester
-        path: Tocsoft.PerformanceTester/bin/Release/Tocsoft.PerformanceTester.*
+        name: Packages
+        path: ouput
