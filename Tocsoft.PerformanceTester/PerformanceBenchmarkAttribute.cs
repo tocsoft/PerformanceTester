@@ -4,8 +4,6 @@ using System.Reflection;
 
 namespace Tocsoft.PerformanceTester
 {
-
-    public class SkippedAttribute : Attribute { }
     public class PerformanceBenchmarkAttribute : Attribute, IPerformanceTestCaseFactory
     {
 

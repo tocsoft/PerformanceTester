@@ -23,60 +23,59 @@ namespace Tocsoft.PerformanceTester
         public override string Name => $"{methodInfo.DeclaringType.FullName}.{methodInfo.Name}";
         public override string DisplayName => $"{methodInfo.DeclaringType.FullName}.{methodInfo.Name}";
         public override string UniqueName => $"{methodInfo.DeclaringType.FullName}.{methodInfo.Name}()";
+        public override IEnumerable<ITestLifecycle> BuildLifeTimeEvents()
+        {
+            var methods = methodInfo.ReflectedType
+                            .GetRuntimeMethods();
+            foreach (var m in methods)
+            {
+                if (m == this.methodInfo)
+                {
+                    continue;
+                }
 
-        static object[] emptyArgs = new object[0];
+                var factories = m.GetCustomAttributes()
+                    .OfType<ITestLifecycleFactory>();
+
+                foreach (var f in factories)
+                {
+                    var eventhandlers = f.Build(m);
+                    foreach (var h in eventhandlers)
+                    {
+                        yield return h;
+                    }
+                }
+            }
+        }
 
         public override async Task<IEnumerable<PerformanceTestIterationResult>> ExecuteAsync(TestContext context)
         {
-            var targetType = this.methodInfo.ReflectedType;
-            var ex = ObjectMethodExecutor.Create(this.methodInfo, targetType.GetTypeInfo());
+            IEnumerable<ITestLifecycle> testLifecycles = BuildLifeTimeEvents();
 
-            //Task<IEnumerable<PerformanceTestIterationResult>> ExecuteInnerAsync(ObjectMethodExecutor executor, TypeInfo type)
-            //{
-            //    List<PerformanceTestIterationResult> results = new List<PerformanceTestIterationResult>();
-            //}
+            var afterTest = testLifecycles.OfType<ITestLifecycleAfterTest>().ToArray();
+            var beforeTest = testLifecycles.OfType<ITestLifecycleBeforeTest>().ToArray();
+            var afterTestIteration = testLifecycles.OfType<ITestLifecycleAfterTestIteration>().ToArray();
+            var beforeTestIteration = testLifecycles.OfType<ITestLifecycleBeforeTestIteration>().ToArray();
 
-            async Task<PerformanceTestIterationResult> ExecuteSingleAsync(ObjectMethodExecutor executor, Type type)
-            {
-                var result = new PerformanceTestIterationResult();
+            var executor = new MethodExecuter(this.methodInfo);
 
-                var instance = type.GetInstance();
-
-                var sw = Stopwatch.StartNew();
-                try
-                {
-
-                    if (executor.IsMethodAsync)
-                    {
-                        await executor.ExecuteAsync(instance, emptyArgs);
-                    }
-                    else
-                    {
-                        executor.Execute(instance, emptyArgs);
-                    }
-
-                    sw.Stop();
-                }
-                catch (Exception exception)
-                {
-                    result.Error = exception;
-                    sw.Stop();
-                }
-
-                result.Duration = sw.Elapsed;
-
-                return result;
-            }
+            foreach (var t in beforeTest) { await t.BeforeTest(context); }
 
             var results = new ConcurrentBag<PerformanceTestIterationResult>();
             for (var i = 0; i < this.settings.WarmUpCount; i++)
             {
-                using (var subContext = TestContext.Start(context, true))
+                using (var subContext = TestContext.Start(this, context, true))
                 {
-                    var result = await ExecuteSingleAsync(ex, targetType);
-                    result.IsWarmup = true;
-                    result.Output = subContext.Output;
-                    results.Add(result);
+                    foreach (var t in beforeTestIteration) { await t.BeforeTestIteration(subContext); }
+                    var result = await executor.ExecuteAsync();
+                    results.Add(new PerformanceTestIterationResult
+                    {
+                        Duration = result.Elapsed,
+                        Error = result.Error,
+                        IsWarmup = true,
+                        Output = subContext.Output
+                    });
+                    foreach (var t in afterTestIteration) { await t.AfterTestIteration(subContext); }
                 }
             }
             var timeout = Stopwatch.StartNew();
@@ -87,12 +86,18 @@ namespace Tocsoft.PerformanceTester
                 {
                     do
                     {
-                        using (var subContext = TestContext.Start(context, false))
+                        using (var subContext = TestContext.Start(this, context, false))
                         {
-                            var result = await ExecuteSingleAsync(ex, targetType);
-                            result.IsWarmup = false;
-                            result.Output = subContext.Output;
-                            results.Add(result);
+                            foreach (var e in beforeTestIteration) { await e.BeforeTestIteration(subContext); }
+                            var result = await executor.ExecuteAsync();
+                            results.Add(new PerformanceTestIterationResult
+                            {
+                                Duration = result.Elapsed,
+                                Error = result.Error,
+                                IsWarmup = false,
+                                Output = subContext.Output
+                            });
+                            foreach (var e in afterTestIteration) { await e.AfterTestIteration(subContext); }
                         }
                     } while (timeout.ElapsedMilliseconds < settings.ExecutionLength);
                 });
@@ -102,16 +107,85 @@ namespace Tocsoft.PerformanceTester
             await Task.WhenAll(tasks);
             // all executions complete deal with stats etc out side the runners
 
+            foreach (var t in afterTest) { await t.AfterTest(context); }
+
             return results;
+        }
+    }
 
-            // in here we are async all the way down
-            // we handle newing up class/disposing of class multiple times etc here
+    public class MethodExecuterResult
+    {
+        public MethodExecuterResult(TimeSpan elapsed, Exception error)
+        {
+            Elapsed = elapsed;
+            Error = error;
+        }
 
-            // new class
-            // execute method
-            // scoped injection??
-            // time everything
-            // export report
+        public TimeSpan Elapsed { get; }
+        public Exception Error { get; }
+    }
+
+    public class MethodExecuter
+    {
+        static object[] emptyArgs = new object[0];
+
+        private readonly Type targetType;
+
+        private readonly ObjectMethodExecutor executor;
+
+        public MethodExecuter(MethodInfo methodInfo)
+        {
+            this.targetType = methodInfo.ReflectedType;
+            this.executor = ObjectMethodExecutor.Create(methodInfo, targetType.GetTypeInfo());
+        }
+
+        public async Task<MethodExecuterResult> ExecuteAsync(bool throwException = false)
+        {
+            Exception error = null;
+
+            var instance = targetType.GetInstance();
+
+            var sw = Stopwatch.StartNew();
+            try
+            {
+
+                if (executor.IsMethodAsync)
+                {
+                    await executor.ExecuteAsync(instance, emptyArgs);
+                }
+                else
+                {
+                    executor.Execute(instance, emptyArgs);
+                }
+
+                sw.Stop();
+            }
+            catch (Exception exception)
+            {
+                error = exception;
+                sw.Stop();
+            }
+
+            try
+            {
+                if (instance is IDisposable d)
+                {
+                    d.Dispose();
+                    instance = null;
+                }
+            }
+            catch (Exception exception)
+            {
+                error = error ?? exception;
+            }
+
+
+            if (throwException && error != null)
+            {
+                throw error;
+            }
+
+            return new MethodExecuterResult(sw.Elapsed, error);
         }
     }
 }

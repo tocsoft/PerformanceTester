@@ -1,14 +1,9 @@
-using Microsoft.VisualStudio.TestPlatform.Common;
-using Microsoft.VisualStudio.TestPlatform.ObjectModel;
-using Microsoft.VisualStudio.TestPlatform.ObjectModel.Adapter;
-using Microsoft.VisualStudio.TestPlatform.ObjectModel.Logging;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Threading;
-using Xunit.Abstractions;
-using Xunit.Sdk;
 using Tocsoft.PerformanceTester;
+using System.Threading.Tasks;
 
 namespace Benchmarking.Benchmarks
 {
@@ -22,13 +17,25 @@ namespace Benchmarking.Benchmarks
         {
             this.context = TestContext.CurrentContext;
             this.env = this.context.Properties["environment"];
-            context.WriteLine($"Constructor { this.env}- {Thread.CurrentThread.ManagedThreadId}");
+            context.WriteLine($"Constructor { this.env} {context.IsWarmup}- {Thread.CurrentThread.ManagedThreadId}");
         }
 
-        [PerformanceBenchmark(WarmUpCount = 10, ExecutionLength = 3000, ConcurrancyCount = 10)]
-        public void Test1()
+        [PerformanceBenchmark(WarmUpCount = 3, ExecutionLength = 3000, ConcurrancyCount = 10)]
+        public async Task Test1()
         {
-            Thread.Sleep(250);
+            var runid = Guid.NewGuid();
+            context.WriteLine($"before async {runid}");
+            await Task.Delay(250);
+            context.WriteLine($"after async {runid}");
+        }
+    }
+
+    public class beforeHook
+    {
+        [BeforeAllTests]
+        public void BeforeAll()
+        {
+            TestContext.CurrentContext.WriteLine("Before all tests here ran once");
         }
     }
 }

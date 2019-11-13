@@ -5,6 +5,7 @@ using Microsoft.VisualStudio.TestPlatform.PlatformAbstractions.Interfaces;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Security.Cryptography;
@@ -82,87 +83,164 @@ namespace Tocsoft.PerformanceTester
             throw new NotImplementedException();
         }
 
+        private List<ITestLifecycle> TestLifeCyclesCallbacks(IEnumerable<string> sources)
+        {
+            return Itter().ToList();
+
+            IEnumerable<ITestLifecycle> Itter()
+            {
+                foreach (var s in sources)
+                {
+                    var assembly = Assembly.LoadFrom(s);
+
+                    var types = assembly
+                                    .GetTypes();
+                    foreach (var t in types)
+                    {
+                        if (t.IsAbstract)
+                        {
+                            continue;
+                        }
+
+                        var methods = t.GetRuntimeMethods();
+
+                        foreach (var m in methods)
+                        {
+                            var testCaseFactories = m.GetCustomAttributes(true)
+                                                .OfType<IGlobalTestLifecycleFactory>();
+                            foreach (var f in testCaseFactories)
+                            {
+                                foreach (var c in f.Build(m))
+                                {
+                                    yield return c;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
         public void RunTests(IEnumerable<TestCase> tests, IRunContext runContext, IFrameworkHandle frameworkHandle)
         {
-            var logger = new TestLogger(frameworkHandle);
-            var settings = new AdapterSettings(logger);
-            settings.Load(runContext.RunSettings.SettingsXml);
-            logger.InitSettings(settings);
+            var dir = Directory.GetCurrentDirectory();
 
-            frameworkHandle.EnableShutdownAfterTestRun = true;
-            var toRun = Convert(tests);
+            var folder = Path.Combine(dir, "TestResults");
+            Directory.CreateDirectory(folder);
+            var file = Path.Combine(folder, $"{Environment.UserName}_{Environment.MachineName}_{DateTime.Now:yyyy-MM-dd_HH_mm_ss}.csv");
 
-            var missing = tests.Except(toRun.Select(x => x.testCase));
-            foreach (var m in missing)
+            using (var fs = File.OpenWrite(file))
+            using (var tw = new StreamWriter(fs))
             {
-                frameworkHandle.RecordEnd(m, TestOutcome.NotFound);
-            }
-            // generate report details for all runs etc of all calls
+                tw.WriteCsvLine("Test Name", "Iteration", "Is Warmup", "Duration", "Iteration Status", "Run Status");
 
-            // parallel etc in here
+                var logger = new TestLogger(frameworkHandle);
+                var settings = new AdapterSettings(logger);
+                settings.Load(runContext.RunSettings.SettingsXml);
+                logger.InitSettings(settings);
 
-            foreach (var t in toRun)
-            {
-                var testResult = new TestResult(t.testCase);
-                if (t.perfTest.Skipped)
+                frameworkHandle.EnableShutdownAfterTestRun = true;
+                var toRun = Convert(tests);
+
+                var missing = tests.Except(toRun.Select(x => x.testCase));
+                foreach (var m in missing)
                 {
-                    testResult.Outcome = TestOutcome.Skipped;
-                    frameworkHandle.RecordResult(testResult);
-                    //frameworkHandle.RecordEnd(t.testCase, testResult.Outcome);
-                    continue;
+                    frameworkHandle.RecordEnd(m, TestOutcome.NotFound);
                 }
-                frameworkHandle.RecordStart(t.testCase);
-                using (var context = TestContext.Start(settings))
+
+                var lifecycleEvents = TestLifeCyclesCallbacks(tests.Select(x => x.Source).Distinct().ToList());
+                var beforeAll = lifecycleEvents.OfType<ITestLifecycleBeforeAllTests>().ToArray();
+                var afterAll = lifecycleEvents.OfType<ITestLifecycleAfterAllTests>().ToArray();
+
+                // generate report details for all runs etc of all calls
+
+                // parallel etc in here
+                using (var globalCtx = TestContext.Start(frameworkHandle, settings))
                 {
-                    var sw = Stopwatch.StartNew();
-                    var task = t.perfTest.ExecuteAsync(context);
+                    foreach (var evnt in beforeAll) { evnt.BeforeAllTests(globalCtx).GetAwaiter().GetResult(); }
+                }
 
-                    Task.WaitAll(task);
-                    sw.Stop();
-                    var result = task.Result;
+                foreach (var t in toRun)
+                {
+                    var testResult = new TestResult(t.testCase);
+                    if (t.perfTest.Skipped)
+                    {
+                        testResult.Outcome = TestOutcome.Skipped;
+                        frameworkHandle.RecordResult(testResult);
 
-                    // process the results here
-                    testResult.Duration = sw.Elapsed;
+                        tw.WriteCsvLine(t.perfTest.Name, "-", "-", "-", "Skipped");
+                        continue;
+                    }
+                    frameworkHandle.RecordStart(t.testCase);
+                    using (var context = TestContext.Start(t.perfTest, settings))
+                    {
+
+                        var sw = Stopwatch.StartNew();
+                        var task = t.perfTest.ExecuteAsync(context);
+
+                        Task.WaitAll(task);
+                        sw.Stop();
+                        var result = task.Result;
+
+                        var errors = result.Select(x => x.Error).Where(x => x != null).ToList();
+                        if (errors.Any())
+                        {
+                            testResult.ErrorStackTrace = string.Join("\n\n-------\n\n", errors.Select(x => x.StackTrace));
+                            testResult.ErrorMessage = string.Join("\n\n-------\n\n", errors.Select(x => x.Message));
+
+                            testResult.Outcome = TestOutcome.Failed;
+                        }
+                        else
+                        {
+                            testResult.Outcome = TestOutcome.Passed;
+                        }
+
+                        int counter = 0;
+                        foreach (var r in result.Where(x=>x.IsWarmup))
+                        {
+                            tw.WriteCsvLine(t.perfTest.Name, ++counter, r.IsWarmup, r.Duration.TotalSeconds, r.Error == null ? TestOutcome.Passed : TestOutcome.Failed, testResult.Outcome);
+                        }
+                        counter = 0;
+                        foreach (var r in result.Where(x => !x.IsWarmup))
+                        {
+                            tw.WriteCsvLine(t.perfTest.Name, ++counter, r.IsWarmup, r.Duration.TotalSeconds, r.Error == null ? TestOutcome.Passed : TestOutcome.Failed, testResult.Outcome);
+                        }
+
+                        // process the results here
+                        testResult.Duration = sw.Elapsed;
 
 
-                    var runs = result.Where(x => x.IsWarmup == false).Select(x => x.Duration);
-                    var warmups = result.Where(x => x.IsWarmup == true).Select(x => x.Duration);
+                        var runs = result.Where(x => x.IsWarmup == false).Select(x => x.Duration);
+                        var warmups = result.Where(x => x.IsWarmup == true).Select(x => x.Duration);
 
-                    var mean = TimeSpanStatistics.Mean(runs);
-                    var standardDeviation = TimeSpanStatistics.StandardDeviation(runs);
+                        var mean = TimeSpanStatistics.Mean(runs);
+                        var standardDeviation = TimeSpanStatistics.StandardDeviation(runs);
 
-                    // format a table of output results here
-                    var msg = $@"Warm up Count : {warmups.Count()}
+                        // format a table of output results here
+                        var msg = $@"Warm up Count : {warmups.Count()}
 Warm up Duration : {new TimeSpan(warmups.Sum(x => x.Ticks))}
 Executed : {runs.Count()}
 Mean Duration: {mean}
-Standard Deviation Duration: {standardDeviation}";
+Standard Deviation Duration: {standardDeviation}
+";
 
-                    testResult.Messages.Add(new TestResultMessage(TestResultMessage.StandardOutCategory, msg));
-                    testResult.Messages.Add(new TestResultMessage(TestResultMessage.StandardOutCategory, context.Output));
+                        testResult.Messages.Add(new TestResultMessage(TestResultMessage.StandardOutCategory, msg));
+                        testResult.Messages.Add(new TestResultMessage(TestResultMessage.StandardOutCategory, context.Output));
 
-                    foreach (var r in result.Where(x => !string.IsNullOrWhiteSpace(x.Output)))
-                    {
-                        testResult.Messages.Add(new TestResultMessage(TestResultMessage.AdditionalInfoCategory, r.Output));
-                    }
+                        foreach (var r in result.Where(x => !string.IsNullOrWhiteSpace(x.Output)))
+                        {
+                            testResult.Messages.Add(new TestResultMessage(TestResultMessage.AdditionalInfoCategory, r.Output));
+                        }
 
-                    var errors = result.Select(x => x.Error).Where(x => x != null).ToList();
-                    if (errors.Any())
-                    {
-                        testResult.ErrorStackTrace = string.Join("\n\n-------\n\n", errors.Select(x => x.StackTrace));
-                        testResult.ErrorMessage = string.Join("\n\n-------\n\n", errors.Select(x => x.Message));
-
-                        testResult.Outcome = TestOutcome.Failed;
-                        frameworkHandle.RecordResult(testResult);
-                        //frameworkHandle.RecordEnd(t.testCase, testResult.Outcome);
-                    }
-                    else
-                    {
-                        testResult.Outcome = TestOutcome.Passed;
 
                         frameworkHandle.RecordResult(testResult);
-                        //frameworkHandle.RecordEnd(t.testCase, testResult.Outcome);
                     }
+                }
+
+                using (var globalCtx = TestContext.Start(frameworkHandle, settings))
+                {
+                    foreach (var evnt in afterAll) { evnt.AfterAllTests(globalCtx).GetAwaiter().GetResult(); }
+
                 }
             }
         }
