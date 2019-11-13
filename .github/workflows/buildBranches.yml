@@ -18,7 +18,8 @@ jobs:
     - name: use-gitversion
       uses: GitTools/use-gitversion@v0.3
     - name : Upload artifacts
-      uses: actions/upload-artifact@master
+      uses: actions/upload-artifact@master     
+      if: github.event == 'push'
       with:
         name: Packages
         path: Tocsoft.PerformanceTester/output
