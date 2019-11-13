@@ -17,8 +17,11 @@ jobs:
         dotnet-version: 2.2.108
     - name: Build with dotnet
       run: dotnet pack --configuration Release -o ..\output
+
     - name: Configure feed
+      if: success()
       run: dotnet nuget source Add -Name "GitHub" -Source "https://nuget.pkg.github.com/${{github.repository}}/index.json" -UserName ${{github.actor}} -Password ${{ secrets.GITHUB_TOKEN }}
     - name: Publish to nightly feed
+      if: success()
       run: dotnet nuget push  -Source "GitHub" output\*.nupkg
     
