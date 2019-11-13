@@ -54,6 +54,14 @@ namespace Tocsoft.PerformanceTester.Tests
         }
 
         [Fact]
+        public void DisplayName()
+        {
+            adapter.DiscoverTests(new[] { testAssembleLocation }, discoveryContext.Object, logger.Object, sink.Object);
+
+            Assert.Equal("Benchmarking.Benchmarks.UnitTest1.Test1", testCase.DisplayName);
+        }
+
+        [Fact]
         public void ConsistentIdGenerated()
         {
             adapter.DiscoverTests(new[] { testAssembleLocation }, discoveryContext.Object, logger.Object, sink.Object);
