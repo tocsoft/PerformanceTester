@@ -1,0 +1,24 @@
+name: Build
+
+on: 
+  push:
+    branches: master
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v1
+    - name: Setup .NET Core
+      uses: actions/setup-dotnet@v1
+      with:
+        dotnet-version: 2.2.108
+    - name: Build with dotnet
+      run: dotnet pack --configuration Release -o ..\output
+    - name: Configure feed
+      run: dotnet nuget source Add -Name "GitHub" -Source "https://nuget.pkg.github.com/${{github.repository}}/index.json" -UserName ${{github.actor}} -Password ${{ secrets.GITHUB_TOKEN }}
+    - name: Publish to nightly feed
+      run: dotnet nuget push  -Source "GitHub" output\*.nupkg
+    
