@@ -15,9 +15,13 @@ jobs:
       uses: actions/setup-dotnet@v1
       with:
         dotnet-version: 2.2.108
+      
     - name: Build with dotnet
       run: dotnet pack --configuration Release -o ..\output
 
+    - name: setup nuget
+      if: success()
+      run: sudo apt install nuget
     - name: Configure feed
       if: success()
       run: nuget source Add -Name "GitHub" -Source "https://nuget.pkg.github.com/${{github.repository}}/index.json" -UserName ${{github.actor}} -Password ${{ secrets.GITHUB_TOKEN }}
