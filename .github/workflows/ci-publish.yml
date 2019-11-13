@@ -16,7 +16,7 @@ jobs:
       if: success()
       run: dotnet test Tocsoft.PerformanceTester.Tests/Tocsoft.PerformanceTester.Tests.csproj --configuration Release  --collect:"XPlat Code Coverage"
 
-    - run : copy Tocsoft.PerformanceTester.Tests/TestResults/*/coverage.cobertura.xml ./coverage.xml
+    - run : cp Tocsoft.PerformanceTester.Tests/TestResults/*/coverage.cobertura.xml ./coverage.xml
     - uses: codecov/codecov-action@v1.0.3
       with:
         token: ${{secrets.CODECOV_TOKEN}} #required
