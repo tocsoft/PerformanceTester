@@ -7,7 +7,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Benchmarking.Benchmarks", "
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Tocsoft.PerformanceTester", "Tocsoft.PerformanceTester\Tocsoft.PerformanceTester.csproj", "{518436FA-73B1-4D85-8C9E-5FA6993FDEC3}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Tocsoft.PerformanceTester.Tests", "Tocsoft.PerformanceTester.Tests\Tocsoft.PerformanceTester.Tests.csproj", "{CCCEA448-0478-4664-A09C-DFD24C1B589C}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Tocsoft.PerformanceTester.Tests", "Tocsoft.PerformanceTester.Tests\Tocsoft.PerformanceTester.Tests.csproj", "{CCCEA448-0478-4664-A09C-DFD24C1B589C}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = ".github", ".github", "{10B903EA-877A-484A-BC9A-24E68EAF07D1}"
 EndProject
@@ -15,6 +15,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "workflows", "workflows", "{
 	ProjectSection(SolutionItems) = preProject
 		.github\workflows\build-PRs.yml = .github\workflows\build-PRs.yml
 		.github\workflows\ci-publish.yml = .github\workflows\ci-publish.yml
+		.github\workflows\release-publish.yml = .github\workflows\release-publish.yml
 	EndProjectSection
 EndProject
 Global

@@ -1,0 +1,36 @@
+name: Publish
+
+on: 
+  push:
+    tags: 
+      - 'v*'
+
+jobs:
+  publish:
+
+    runs-on: [windows-latest]
+
+    steps:
+    - uses: actions/checkout@v1
+    
+    - name: Run unit tests
+      if: success()
+      run: dotnet test Tocsoft.PerformanceTester.Tests/Tocsoft.PerformanceTester.Tests.csproj --configuration Release
+
+    - name: Generate nuget Package 
+      if: success()
+      run: dotnet pack --configuration Release
+
+    - name : install nuget
+      if: success()
+      uses: warrenbuckley/Setup-Nuget@v1
+
+    - name: Configure feed
+      if: success()
+      run: nuget.exe source Add -Name "GitHub" -Source "https://nuget.pkg.github.com/${{github.actor}}/index.json" -UserName ${{github.actor}} -Password ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Publish to nightly feed
+      if: success()
+      run: nuget.exe push  -Source "GitHub" **/bin/Release/*.nupkg
+    
+    # TODO publish to nuget.org too
