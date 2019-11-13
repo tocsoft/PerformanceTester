@@ -9,8 +9,12 @@
     <Description>A dotnet testing framework for simple load/batch testing/timing scenarios.</Description>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageProjectUrl>https://github.com/tocsoft/PerformanceTester</PackageProjectUrl>
-    <RepositoryUrl>https://github.com/tocsoft/PerformanceTester</RepositoryUrl>
-    <RepositoryType>git</RepositoryType>
+    
+    <PublishRepositoryUrl>true</PublishRepositoryUrl>
+    <EmbedUntrackedSources>true</EmbedUntrackedSources>
+    <IncludeSymbols>true</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+    
   </PropertyGroup>
 
   <ItemGroup>
@@ -20,14 +24,18 @@
     </PackageReference>
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="16.2.0" />
     <PackageReference Include="Microsoft.Extensions.ObjectPool" Version="3.0.0" />
+    <PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.0.0-beta2-19554-01">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
     <PackageReference Include="Microsoft.TestPlatform.ObjectModel" Version="16.4.0" />
   </ItemGroup>
   
-  <Target Name="SetCommitUrl" AfterTargets="GetVersion" Condition=" '$(UpdateVersionProperties)' == 'true' ">
+  <!--<Target Name="SetCommitUrl" AfterTargets="GetVersion" Condition=" '$(UpdateVersionProperties)' == 'true' ">
     <PropertyGroup>
       <RepositoryBranch>$(GitVersion_BranchName)</RepositoryBranch>
       <RepositoryCommit>$(GitVersion_Sha)</RepositoryCommit>
     </PropertyGroup>
-  </Target>
+  </Target>-->
   
 </Project>
