@@ -22,6 +22,8 @@ jobs:
 
   #  - name: Publish package
   #    run: curl -vX PUT -u "${{github.actor}}:TOKEN" -F package=@**/bin/Release/*.nupkg https://nuget.pkg.github.com/${{github.actor}}/
+    - name : install nuget
+      uses: warrenbuckley/Setup-Nuget@v1
     - name: Configure feed
       if: success()
       run: nuget.exe source Add -Name "GitHub" -Source "https://nuget.pkg.github.com/${{github.actor}}/index.json" -UserName ${{github.actor}} -Password ${{ secrets.GITHUB_TOKEN }}
