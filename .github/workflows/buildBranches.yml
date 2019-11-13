@@ -15,12 +15,9 @@ jobs:
         dotnet-version: 2.2.108
     - name: Build with dotnet
       run: dotnet pack --configuration Release -o output
-    
     - name: use-gitversion
       uses: GitTools/use-gitversion@v0.3
-    
     - name : Upload artifacts
-      if: github.event = push
       uses: actions/upload-artifact@master
       with:
         name: Packages
