@@ -7,11 +7,20 @@ on:
 
 jobs:
   build:
+    strategy:
+        matrix:
+            os: [ubuntu-latest, windows-latest]
 
-    runs-on: ubuntu-latest
+    runs-on:  ${{ matrix.os }}
 
     steps:
     - uses: actions/checkout@v1
 
     - name: Run unit tests
-      run: dotnet test Tocsoft.PerformanceTester.Tests/Tocsoft.PerformanceTester.Tests.csproj --configuration Release
+      run: dotnet test Tocsoft.PerformanceTester.Tests/Tocsoft.PerformanceTester.Tests.csproj --configuration Release  --collect:"XPlat Code Coverage"
+    - run : cp Tocsoft.PerformanceTester.Tests/TestResults/*/coverage.cobertura.xml ./coverage.xml
+    - uses: iansu/codecov-action-node@v1.0.0
+      with:
+        token: ${{secrets.CODECOV_TOKEN}} #required
+        file: ./coverage.xml #optional
+        flags: unittests #optional
