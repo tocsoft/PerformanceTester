@@ -11,13 +11,14 @@ jobs:
 
     steps:
     - uses: actions/checkout@v1
-      
-    - name: Build with dotnet
-      run: dotnet pack --configuration Release
-
+    
     - name: Run unit tests
       if: success()
       run: dotnet test Tocsoft.PerformanceTester.Tests/Tocsoft.PerformanceTester.Tests.csproj --configuration Release
+
+    - name: Generate nuget Package 
+      if: success()
+      run: dotnet pack --configuration Release
 
     - name : install nuget
       if: success()

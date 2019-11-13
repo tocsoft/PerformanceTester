@@ -20,8 +20,8 @@ namespace Tocsoft.PerformanceTester
     [ExtensionUri(ExecutorUri)]
     public class VsTestAdapter : ITestExecutor, ITestDiscoverer
     {
-        public static TestProperty MethodNameProperty = TestProperty.Register("Tocsoft.PerformanceTesting.MethodName", "Performance Test - Method Name", typeof(string), typeof(VsTestAdapter));
-        public static TestProperty TypeNameProperty = TestProperty.Register("Tocsoft.PerformanceTesting.TypeName", "Performance Test - Type Name", typeof(string), typeof(VsTestAdapter));
+        internal static TestProperty MethodNameProperty = TestProperty.Register("Tocsoft.PerformanceTesting.MethodName", "Performance Test - Method Name", typeof(string), typeof(VsTestAdapter));
+        internal static TestProperty TypeNameProperty = TestProperty.Register("Tocsoft.PerformanceTesting.TypeName", "Performance Test - Type Name", typeof(string), typeof(VsTestAdapter));
 
         internal const string ExecutorUri = "executor://Tocsoft.PerformanceTester/1";
 
@@ -245,7 +245,7 @@ Standard Deviation Duration: {standardDeviation}
             }
         }
 
-        private IEnumerable<(PerformanceTestCase perfTest, TestCase testCase)> Convert(IEnumerable<TestCase> tests)
+        internal IEnumerable<(PerformanceTestCase perfTest, TestCase testCase)> Convert(IEnumerable<TestCase> tests)
         {
             // convert testcase back to PerformanceTestCase
             foreach (var assemblyGroup in tests.GroupBy(x => x.Source))
