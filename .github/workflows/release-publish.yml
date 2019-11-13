@@ -15,7 +15,14 @@ jobs:
     
     - name: Run unit tests
       if: success()
-      run: dotnet test Tocsoft.PerformanceTester.Tests/Tocsoft.PerformanceTester.Tests.csproj --configuration Release
+      run: dotnet test Tocsoft.PerformanceTester.Tests/Tocsoft.PerformanceTester.Tests.csproj --configuration Release  --collect:"XPlat Code Coverage"
+    
+    - run : copy Tocsoft.PerformanceTester.Tests/TestResults/*/coverage.cobertura.xml ./coverage.xml
+    - uses: codecov/codecov-action@v1.0.3
+      with:
+        token: ${{secrets.CODECOV_TOKEN}} #required
+        file: ./coverage.xml #optional
+        flags: unittests #optional
 
     - name: Generate nuget Package 
       if: success()
