@@ -17,7 +17,7 @@ jobs:
 
     - name: Run unit tests
       if: success()
-      run: dotnet test Tocsoft.PerformanceTester.Tests/Tocsoft.PerformanceTester.Tests.csproj --no-build  --configuration Release
+      run: dotnet test Tocsoft.PerformanceTester.Tests/Tocsoft.PerformanceTester.Tests.csproj --configuration Release
 
     - name : install nuget
       if: success()

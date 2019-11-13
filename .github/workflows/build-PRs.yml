@@ -17,4 +17,4 @@ jobs:
       run: dotnet build --configuration Release
       
     - name: Run unit tests
-      run: dotnet test Tocsoft.PerformanceTester.Tests/Tocsoft.PerformanceTester.Tests.csproj --no-build  --configuration Release
+      run: dotnet test Tocsoft.PerformanceTester.Tests/Tocsoft.PerformanceTester.Tests.csproj --configuration Release
