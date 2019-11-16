@@ -20,7 +20,8 @@ namespace Benchmarking.Benchmarks
             context.WriteLine($"Constructor { this.env} {context.IsWarmup}- {Thread.CurrentThread.ManagedThreadId}");
         }
 
-        [PerformanceBenchmark(WarmUpCount = 3, ExecutionLength = 3000, ConcurrancyCount = 10)]
+        //[PerformanceBenchmark(WarmUpCount = 3, ExecutionLength = 3000, ConcurrancyCount = 10)]
+        [PerformanceBenchmark()]
         public async Task Test1()
         {
             var runid = Guid.NewGuid();

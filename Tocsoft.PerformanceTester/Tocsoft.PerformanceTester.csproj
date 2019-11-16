@@ -37,5 +37,11 @@
       <RepositoryCommit>$(GitVersion_Sha)</RepositoryCommit>
     </PropertyGroup>
   </Target>-->
-  
-</Project>
+  <ItemGroup Label="Package">
+    <None Include="msbuild\build\Tocsoft.PerformanceTester.targets" PackagePath="build\Tocsoft.PerformanceTester.targets" Pack="true" />
+    <None Include="msbuild\build\Tocsoft.PerformanceTester.props" PackagePath="build\Tocsoft.PerformanceTester.props" Pack="true" />
+    <None Include="msbuild\buildMultiTargeting\Tocsoft.PerformanceTester.targets" PackagePath="buildMultiTargeting\Tocsoft.PerformanceTester.targets" Pack="true" />
+    <None Include="msbuild\buildMultiTargeting\Tocsoft.PerformanceTester.props" PackagePath="buildMultiTargeting\Tocsoft.PerformanceTester.props" Pack="true" />
+  </ItemGroup>
+
+  </Project>

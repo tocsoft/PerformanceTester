@@ -62,7 +62,8 @@ namespace Tocsoft.PerformanceTester
             foreach (var t in beforeTest) { await t.BeforeTest(context); }
 
             var results = new ConcurrentBag<PerformanceTestIterationResult>();
-            for (var i = 0; i < this.settings.WarmUpCount; i++)
+            var wc = Math.Max(0, this.settings.WarmUpCount);
+            for (var i = 0; i < wc; i++)
             {
                 using (var subContext = TestContext.Start(this, context, true))
                 {
@@ -80,7 +81,9 @@ namespace Tocsoft.PerformanceTester
             }
             var timeout = Stopwatch.StartNew();
             var tasks = new List<Task>();
-            for (var i = 0; i < this.settings.ConcurrancyCount; i++)
+
+            var cc = Math.Max(1, this.settings.ConcurrancyCount);
+            for (var i = 0; i < cc; i++)
             {
                 var t = Task.Run(async () =>
                 {
