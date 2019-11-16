@@ -16,7 +16,7 @@ namespace Tocsoft.PerformanceTester
         /// <summary>
         /// Get or set the number for executions to perform before starting to measure.
         /// </summary>
-        public long WarmUpCount { get; set; } = 1;
+        public long WarmUpCount { get; set; } = 0;
 
         /// <summary>
         /// Get or set the length of time to attempt to reexecute this case if a previouse run finshes. Method will execute the warm up number for times prior to starting the timer.

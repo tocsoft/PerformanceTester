@@ -161,6 +161,11 @@ namespace Tocsoft.PerformanceTester
 
         public static double Skewness(double[] x)
         {
+            if (x.Length == 1)
+            {
+                return 0;
+            }
+
             // NIST definition of adjusted Fisher-Pearson 
             // coefficient of skewness 
             double m3 = Moment(x, 3);
@@ -177,6 +182,11 @@ namespace Tocsoft.PerformanceTester
 
         public static double Variance(double[] x)
         {
+            if (x.Length == 1)
+            {
+                return 0;
+            }
+
             double mean = Mean(x), sumSq = 0;
             int n = x.Length;
 
