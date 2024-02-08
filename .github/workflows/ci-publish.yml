@@ -27,9 +27,11 @@ jobs:
       if: success()
       run: dotnet pack --configuration Release
 
-    - name : install nuget
-      if: success()
-      uses: warrenbuckley/Setup-Nuget@v1
+    - name: Ensure GitHub NuGet Source Authenticated
+      shell: pwsh
+      run: |
+        dotnet nuget remove source github
+        dotnet nuget add source https://nuget.pkg.github.com/moodedge/index.json -n github -u ${{ secrets.GPR_USERNAME }} -p ${{ secrets.GPR_PASSWORD }} --store-password-in-clear-text
 
     - name: Configure feed
       if: success()
@@ -37,5 +39,5 @@ jobs:
 
     - name: Publish to nightly feed
       if: success()
-      run: nuget.exe push  -Source "GitHub" **/bin/Release/*.nupkg
+      run: dotnet nuget push "**/bin/Release/*.nupkg" -s https://nuget.pkg.github.com/${{github.actor}}/index.json -k ${{secrets.GITHUB_TOKEN}}  --skip-duplicate
     

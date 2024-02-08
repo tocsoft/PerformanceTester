@@ -28,16 +28,17 @@ jobs:
       if: success()
       run: dotnet pack --configuration Release
 
-    - name : install nuget
-      if: success()
-      uses: warrenbuckley/Setup-Nuget@v1
-
     - name: Configure feed
       if: success()
       run: nuget.exe source Add -Name "GitHub" -Source "https://nuget.pkg.github.com/${{github.actor}}/index.json" -UserName ${{github.actor}} -Password ${{ secrets.GITHUB_TOKEN }}
 
     - name: Publish to nightly feed
       if: success()
-      run: nuget.exe push  -Source "GitHub" **/bin/Release/*.nupkg
-    
+      run: dotnet nuget push "**/bin/Release/*.nupkg" -s https://nuget.pkg.github.com/${{github.actor}}/index.json -k ${{secrets.GITHUB_TOKEN}}  --skip-duplicate
+
+    - name: Publish nuget tools
+      if: ${{ github.event_name == 'release' }}
+      shell: pwsh
+      run: |
+        dotnet nuget push "**/bin/Release/*.nupkg" --api-key "${{ secrets.NUGET_API_KEY }}" --source "https://api.nuget.org/v3/index.json"
     # TODO publish to nuget.org too
