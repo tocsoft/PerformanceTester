@@ -1,4 +1,4 @@
-name: Publish
+name: Publish Release
 
 on: 
   push:
@@ -37,7 +37,7 @@ jobs:
       run: dotnet nuget push "**/bin/Release/*.nupkg" -s https://nuget.pkg.github.com/${{github.actor}}/index.json -k ${{secrets.GITHUB_TOKEN}}  --skip-duplicate
 
     - name: Publish nuget tools
-      if: ${{ github.event_name == 'release' }}
+      if: success()
       shell: pwsh
       run: |
         dotnet nuget push "**/bin/Release/*.nupkg" --api-key "${{ secrets.NUGET_API_KEY }}" --source "https://api.nuget.org/v3/index.json"
