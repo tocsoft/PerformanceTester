@@ -57,64 +57,65 @@ namespace Tocsoft.PerformanceTester
             var afterTestIteration = testLifecycles.OfType<ITestLifecycleAfterTestIteration>().ToArray();
             var beforeTestIteration = testLifecycles.OfType<ITestLifecycleBeforeTestIteration>().ToArray();
 
-            var executor = new MethodExecuter(this.methodInfo);
-
-            foreach (var t in beforeTest) { await t.BeforeTest(context); }
-
-            var results = new ConcurrentBag<PerformanceTestIterationResult>();
-            var wc = Math.Max(0, this.settings.WarmUpCount);
-            for (var i = 0; i < wc; i++)
+            using (var executor = new MethodExecuter(this.methodInfo))
             {
-                using (var subContext = TestContext.Start(this, context, true))
-                {
-                    foreach (var t in beforeTestIteration) { await t.BeforeTestIteration(subContext); }
-                    var result = await executor.ExecuteAsync();
-                    results.Add(new PerformanceTestIterationResult
-                    {
-                        Duration = result.Elapsed,
-                        Error = result.Error,
-                        IsWarmup = true,
-                        Output = subContext.Output,
-                        Tags = subContext.Tags
-                    });
-                    foreach (var t in afterTestIteration) { await t.AfterTestIteration(subContext); }
-                }
-            }
-            var timeout = Stopwatch.StartNew();
-            var tasks = new List<Task>();
+                foreach (var t in beforeTest) { await t.BeforeTest(context); }
 
-            var cc = Math.Max(1, this.settings.ConcurrancyCount);
-            for (var i = 0; i < cc; i++)
-            {
-                var t = Task.Run(async () =>
+                var results = new ConcurrentBag<PerformanceTestIterationResult>();
+                var wc = Math.Max(0, this.settings.WarmUpCount);
+                for (var i = 0; i < wc; i++)
                 {
-                    do
+                    using (var subContext = TestContext.Start(this, context, true))
                     {
-                        using (var subContext = TestContext.Start(this, context, false))
+                        foreach (var t in beforeTestIteration) { await t.BeforeTestIteration(subContext); }
+                        var result = await executor.ExecuteAsync();
+                        results.Add(new PerformanceTestIterationResult
                         {
-                            foreach (var e in beforeTestIteration) { await e.BeforeTestIteration(subContext); }
-                            var result = await executor.ExecuteAsync(); // should we create an instance across runs??? propably should!
-                            results.Add(new PerformanceTestIterationResult
+                            Duration = result.Elapsed,
+                            Error = result.Error,
+                            IsWarmup = true,
+                            Output = subContext.Output,
+                            Tags = subContext.Tags
+                        });
+                        foreach (var t in afterTestIteration) { await t.AfterTestIteration(subContext); }
+                    }
+                }
+                var timeout = Stopwatch.StartNew();
+                var tasks = new List<Task>();
+
+                var cc = Math.Max(1, this.settings.ConcurrancyCount);
+                for (var i = 0; i < cc; i++)
+                {
+                    var t = Task.Run(async () =>
+                    {
+                        do
+                        {
+                            using (var subContext = TestContext.Start(this, context, false))
                             {
-                                Duration = result.Elapsed,
-                                Error = result.Error,
-                                IsWarmup = false,
-                                Output = subContext.Output,
-                                Tags = subContext.Tags
-                            });
-                            foreach (var e in afterTestIteration) { await e.AfterTestIteration(subContext); }
-                        }
-                    } while (timeout.ElapsedMilliseconds < settings.ExecutionLength);
-                });
+                                foreach (var e in beforeTestIteration) { await e.BeforeTestIteration(subContext); }
+                                var result = await executor.ExecuteAsync(); // should we create an instance across runs??? propably should!
+                                results.Add(new PerformanceTestIterationResult
+                                {
+                                    Duration = result.Elapsed,
+                                    Error = result.Error,
+                                    IsWarmup = false,
+                                    Output = subContext.Output,
+                                    Tags = subContext.Tags
+                                });
+                                foreach (var e in afterTestIteration) { await e.AfterTestIteration(subContext); }
+                            }
+                        } while (timeout.ElapsedMilliseconds < settings.ExecutionLength);
+                    });
 
-                tasks.Add(t);
+                    tasks.Add(t);
+                }
+                await Task.WhenAll(tasks);
+                // all executions complete deal with stats etc out side the runners
+
+                foreach (var t in afterTest) { await t.AfterTest(context); }
+
+                return results;
             }
-            await Task.WhenAll(tasks);
-            // all executions complete deal with stats etc out side the runners
-
-            foreach (var t in afterTest) { await t.AfterTest(context); }
-
-            return results;
         }
     }
 

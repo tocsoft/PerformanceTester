@@ -25,8 +25,10 @@ namespace Tocsoft.PerformanceTester
 
         public Task BeforeAllTests(ITestContext testContext)
         {
-            var executor = new MethodExecuter(methodInfo);
-            return executor.ExecuteAsync(true);
+            using (var executor = new MethodExecuter(methodInfo))
+            {
+                return executor.ExecuteAsync(true);
+            }
         }
     }
 }
