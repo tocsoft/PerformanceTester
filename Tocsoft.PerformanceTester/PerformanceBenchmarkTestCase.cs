@@ -48,7 +48,7 @@ namespace Tocsoft.PerformanceTester
             }
         }
 
-        public override async Task<IEnumerable<PerformanceTestIterationResult>> ExecuteAsync(TestContext context)
+        public override async Task<IEnumerable<PerformanceTestIterationResult>> ExecuteAsync(ITestContext context)
         {
             IEnumerable<ITestLifecycle> testLifecycles = BuildLifeTimeEvents();
 
@@ -74,7 +74,8 @@ namespace Tocsoft.PerformanceTester
                         Duration = result.Elapsed,
                         Error = result.Error,
                         IsWarmup = true,
-                        Output = subContext.Output
+                        Output = subContext.Output,
+                        Tags = subContext.Tags
                     });
                     foreach (var t in afterTestIteration) { await t.AfterTestIteration(subContext); }
                 }
@@ -92,13 +93,14 @@ namespace Tocsoft.PerformanceTester
                         using (var subContext = TestContext.Start(this, context, false))
                         {
                             foreach (var e in beforeTestIteration) { await e.BeforeTestIteration(subContext); }
-                            var result = await executor.ExecuteAsync();
+                            var result = await executor.ExecuteAsync(); // should we create an instance across runs??? propably should!
                             results.Add(new PerformanceTestIterationResult
                             {
                                 Duration = result.Elapsed,
                                 Error = result.Error,
                                 IsWarmup = false,
-                                Output = subContext.Output
+                                Output = subContext.Output,
+                                Tags = subContext.Tags
                             });
                             foreach (var e in afterTestIteration) { await e.AfterTestIteration(subContext); }
                         }
@@ -128,25 +130,41 @@ namespace Tocsoft.PerformanceTester
         public Exception Error { get; }
     }
 
-    public class MethodExecuter
+    public class MethodExecuter : IDisposable
     {
         static object[] emptyArgs = new object[0];
 
         private readonly Type targetType;
 
         private readonly ObjectMethodExecutor executor;
+        private object instance;
 
         public MethodExecuter(MethodInfo methodInfo)
         {
             this.targetType = methodInfo.ReflectedType;
             this.executor = ObjectMethodExecutor.Create(methodInfo, targetType.GetTypeInfo());
+            this.instance = targetType.GetInstance();
+        }
+
+        public void Dispose()
+        {
+            try
+            {
+                if (instance is IDisposable d)
+                {
+                    d.Dispose();
+                    instance = null;
+                }
+            }
+            catch (Exception exception)
+            {
+                throw;
+            }
         }
 
         public async Task<MethodExecuterResult> ExecuteAsync(bool throwException = false)
         {
             Exception error = null;
-
-            var instance = targetType.GetInstance();
 
             var sw = Stopwatch.StartNew();
             try
@@ -168,20 +186,6 @@ namespace Tocsoft.PerformanceTester
                 error = exception;
                 sw.Stop();
             }
-
-            try
-            {
-                if (instance is IDisposable d)
-                {
-                    d.Dispose();
-                    instance = null;
-                }
-            }
-            catch (Exception exception)
-            {
-                error = error ?? exception;
-            }
-
 
             if (throwException && error != null)
             {

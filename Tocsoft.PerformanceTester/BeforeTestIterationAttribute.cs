@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace Tocsoft.PerformanceTester
 {
-    public class BeforeAllTestsAttribute : Attribute, IGlobalTestLifecycleFactory
+    public class BeforeTestIterationAttribute : Attribute, IGlobalTestLifecycleFactory
     {
         IEnumerable<ITestLifecycle> IGlobalTestLifecycleFactory.Build(MethodInfo methodInfo)
         {
@@ -14,16 +14,16 @@ namespace Tocsoft.PerformanceTester
         }
     }
 
-    internal class BeforeAllTestsMethodCall : ITestLifecycleBeforeAllTests
+    internal class BeforeTestIterationAttributeMethodCall : ITestLifecycleBeforeTestIteration
     {
         private readonly MethodInfo methodInfo;
 
-        public BeforeAllTestsMethodCall(MethodInfo methodInfo)
+        public BeforeTestIterationAttributeMethodCall(MethodInfo methodInfo)
         {
             this.methodInfo = methodInfo;
         }
 
-        public Task BeforeAllTests(ITestContext testContext)
+        public Task BeforeTestIteration(ITestContext iterationContext)
         {
             var executor = new MethodExecuter(methodInfo);
             return executor.ExecuteAsync(true);

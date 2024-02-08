@@ -21,31 +21,31 @@ namespace Tocsoft.PerformanceTester
 
     public interface ITestLifecycleBeforeTest : ITestLifecycle
     {
-        Task BeforeTest(TestContext testContext);
+        Task BeforeTest(ITestContext testContext);
     }
 
     public interface ITestLifecycleBeforeTestIteration : ITestLifecycle
     {
-        Task BeforeTestIteration(TestContext iterationContext);
+        Task BeforeTestIteration(ITestContext iterationContext);
     }
 
     public interface ITestLifecycleAfterTestIteration : ITestLifecycle
     {
-        Task AfterTestIteration(TestContext iterationContext);
+        Task AfterTestIteration(ITestContext iterationContext);
     }
 
     public interface ITestLifecycleAfterTest : ITestLifecycle
     {
-        Task AfterTest(TestContext testContext);
+        Task AfterTest(ITestContext testContext);
     }
 
     public interface ITestLifecycleAfterAllTests : ITestLifecycle
     {
-        Task AfterAllTests(TestContext testContext);
+        Task AfterAllTests(ITestContext testContext);
     }
 
     public interface ITestLifecycleBeforeAllTests : ITestLifecycle
     {
-        Task BeforeAllTests(TestContext testContext);
+        Task BeforeAllTests(ITestContext testContext);
     }
 }

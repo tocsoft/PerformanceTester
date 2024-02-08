@@ -132,7 +132,7 @@ namespace Tocsoft.PerformanceTester
             using (var fs = File.OpenWrite(file))
             using (var tw = new StreamWriter(fs))
             {
-                tw.WriteCsvLine("Test Name", "Iteration", "Is Warmup", "Duration", "Iteration Status", "Run Status");
+                tw.WriteCsvLine("Test Name", "Iteration", "Is Warmup", "Duration", "Iteration Status", "Run Status", "Tags");
 
                 var logger = new TestLogger(frameworkHandle);
                 var settings = new AdapterSettings(logger);
@@ -168,7 +168,7 @@ namespace Tocsoft.PerformanceTester
                         testResult.Outcome = TestOutcome.Skipped;
                         frameworkHandle.RecordResult(testResult);
 
-                        tw.WriteCsvLine(t.perfTest.Name, "-", "-", "-", "Skipped");
+                        tw.WriteCsvLine(t.perfTest.Name, "-", "-", "-", "Skipped", "");
                         continue;
                     }
                     frameworkHandle.RecordStart(t.testCase);
@@ -196,14 +196,14 @@ namespace Tocsoft.PerformanceTester
                         }
 
                         int counter = 0;
-                        foreach (var r in result.Where(x=>x.IsWarmup))
+                        foreach (var r in result.Where(x => x.IsWarmup))
                         {
-                            tw.WriteCsvLine(t.perfTest.Name, ++counter, r.IsWarmup, r.Duration.TotalSeconds, r.Error == null ? TestOutcome.Passed : TestOutcome.Failed, testResult.Outcome);
+                            tw.WriteCsvLine(t.perfTest.Name, ++counter, r.IsWarmup, r.Duration.TotalSeconds, r.Error == null ? TestOutcome.Passed : TestOutcome.Failed, testResult.Outcome, string.Join(";", r.Tags ?? Array.Empty<string>()));
                         }
                         counter = 0;
                         foreach (var r in result.Where(x => !x.IsWarmup))
                         {
-                            tw.WriteCsvLine(t.perfTest.Name, ++counter, r.IsWarmup, r.Duration.TotalSeconds, r.Error == null ? TestOutcome.Passed : TestOutcome.Failed, testResult.Outcome);
+                            tw.WriteCsvLine(t.perfTest.Name, ++counter, r.IsWarmup, r.Duration.TotalSeconds, r.Error == null ? TestOutcome.Passed : TestOutcome.Failed, testResult.Outcome, string.Join(";", r.Tags ?? Array.Empty<string>()));
                         }
 
                         // process the results here

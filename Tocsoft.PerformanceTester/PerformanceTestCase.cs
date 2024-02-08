@@ -21,6 +21,6 @@ namespace Tocsoft.PerformanceTester
             return Enumerable.Empty<ITestLifecycle>();
         }
 
-        public abstract Task<IEnumerable<PerformanceTestIterationResult>> ExecuteAsync(TestContext context);
+        public abstract Task<IEnumerable<PerformanceTestIterationResult>> ExecuteAsync(ITestContext context);
     }
 }

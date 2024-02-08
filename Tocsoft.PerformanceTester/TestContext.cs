@@ -8,65 +8,114 @@ using System.Threading;
 
 namespace Tocsoft.PerformanceTester
 {
-    public class TestContext : IDisposable
+    public static class TestContext
     {
-        private static AsyncLocal<TestContext> context = new AsyncLocal<TestContext>();
-        public static TestContext CurrentContext => context.Value;
-        public static IReadOnlyDictionary<string,string> Parameters => CurrentContext?.Properties;
+        private static AsyncLocal<ITestContext> context = new AsyncLocal<ITestContext>();
 
+        public static ITestContext CurrentContext => context.Value;
+
+        public static IReadOnlyDictionary<string, string> Parameters => CurrentContext?.Parameters;
+
+        public static IDictionary<object, object> Items => CurrentContext?.Items;
+
+        public static IList<string> Tags => CurrentContext?.Tags;
+
+        public static PerformanceTestCase TestCase => CurrentContext?.TestCase;
+
+        public static bool? IsWarmup => CurrentContext?.IsWarmup;
+
+        public static void WriteLine(string str)
+            => CurrentContext?.WriteLine(str);
+
+
+        public static ITestContext Start(PerformanceTestCase testCase, ITestContext parentContext, bool? isWarmup)
+        {
+            var context = new DefaultTestContext(testCase, parentContext, isWarmup);
+            TestContext.context.Value = context;
+            return context;
+        }
+
+        public static ITestContext Start(PerformanceTestCase testCase, AdapterSettings settings)
+        {
+            var context = new DefaultTestContext(testCase, settings);
+            TestContext.context.Value = context;
+            return context;
+        }
+        public static ITestContext Start(IMessageLogger messageLogger, AdapterSettings settings)
+        {
+            var context = new DefaultTestContext(messageLogger, settings);
+            TestContext.context.Value = context;
+            return context;
+        }
+
+        internal static void RevertContext(ITestContext testContext, ITestContext parentContext)
+        {
+            if (context.Value == testContext)
+            {
+                context.Value = parentContext;
+            }
+        }
+    }
+
+    public interface ITestContext : IDisposable
+    {
+        IReadOnlyDictionary<string, string> Parameters { get; }
+
+        IDictionary<object, object> Items { get; }
+
+        IList<string> Tags { get; }
+
+        string Output { get; }
+
+        PerformanceTestCase TestCase { get; }
+
+        bool? IsWarmup { get; }
+
+        void WriteLine(string str);
+    }
+
+    internal class DefaultTestContext : ITestContext, IDisposable
+    {
         static ObjectPool<StringBuilder> stringBuilderPool = new DefaultObjectPool<StringBuilder>(new StringBuilderPooledObjectPolicy());
-        private TestContext(PerformanceTestCase testCase, AdapterSettings settings)
+
+        internal DefaultTestContext(PerformanceTestCase testCase, AdapterSettings settings)
         {
             this.sb = stringBuilderPool.Get();
 
-            this.Properties = settings.TestProperties;
+            this.Parameters = settings.TestProperties;
             IsWarmup = false;
             TestCase = testCase;
         }
-        private TestContext(IMessageLogger messageLogger, AdapterSettings settings)
+
+        internal DefaultTestContext(IMessageLogger messageLogger, AdapterSettings settings)
         {
             this.sb = stringBuilderPool.Get();
-            this.Properties = settings.TestProperties;
+            this.Parameters = settings.TestProperties;
             IsWarmup = false;
             this.messageLogger = messageLogger;
         }
 
-        private TestContext(PerformanceTestCase testCase, TestContext parentContext, bool isWarmup)
+        internal DefaultTestContext(PerformanceTestCase testCase, ITestContext parentContext, bool? isWarmup)
         {
             this.sb = stringBuilderPool.Get();
-            this.Properties = parentContext.Properties;
+            this.Parameters = parentContext.Parameters;
             TestCase = testCase;
             this.parentContext = parentContext;
             IsWarmup = isWarmup;
         }
 
-        public static TestContext Start(PerformanceTestCase testCase, TestContext parentContext, bool isWarmup)
-        {
-            var context = new TestContext(testCase, parentContext, isWarmup);
-            TestContext.context.Value = context;
-            return context;
-        }
-
-        public static TestContext Start(PerformanceTestCase testCase, AdapterSettings settings)
-        {
-            var context = new TestContext(testCase, settings);
-            TestContext.context.Value = context;
-            return context;
-        }
-        public static TestContext Start(IMessageLogger messageLogger, AdapterSettings settings)
-        {
-            var context = new TestContext(messageLogger, settings);
-            TestContext.context.Value = context;
-            return context;
-        }
-
-        public bool IsWarmup { get; }
-
         private StringBuilder sb;
-        private readonly TestContext parentContext;
+        private readonly ITestContext parentContext;
         private readonly IMessageLogger messageLogger;
 
-        public IReadOnlyDictionary<string, string> Properties { get; }
+        public bool? IsWarmup { get; }
+
+        public IReadOnlyDictionary<string, string> Parameters { get; }
+
+        public IDictionary<object, object> Items { get; } = new Dictionary<object, object>();
+
+        public IList<string> Tags { get; } = new List<string>();
+
         public string Output => sb.ToString();
 
         public PerformanceTestCase TestCase { get; }
@@ -75,7 +124,7 @@ namespace Tocsoft.PerformanceTester
         {
             stringBuilderPool.Return(sb);
             sb = null;
-            context.Value = this.parentContext;
+            TestContext.RevertContext(this, parentContext);
         }
 
         public void WriteLine(string str)
