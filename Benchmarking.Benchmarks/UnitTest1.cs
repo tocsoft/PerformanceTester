@@ -17,14 +17,24 @@ namespace Benchmarking.Benchmarks
             var context = TestContext.CurrentContext;
             this.env = context.Parameters["environment"];
             context.WriteLine($"Constructor {this.env} {context.IsWarmup}- {Thread.CurrentThread.ManagedThreadId}");
+
+            context.RegisterCallback(LifecycleEvent.BeforeIteration, (ctx) =>
+            {
+                ctx.WriteLine($"before iteration: warm:{ctx.IsWarmup} {string.Join(" ", ctx.Tags)}");
+            });
+            context.RegisterCallback(LifecycleEvent.AfterIteration, (ctx) =>
+            {
+                ctx.WriteLine($"after iteration: warm:{ctx.IsWarmup} {string.Join(" ", ctx.Tags)}");
+            });
         }
 
-        [PerformanceBenchmark(WarmUpCount = 3, ExecutionLength = 3000, ConcurrancyCount = 1)]
+        [PerformanceBenchmark(WarmUpCount = 3, ExecutionCount = 5, ConcurrancyCount = 1)]
         //[PerformanceBenchmark()]
         public async Task Test1()
         {
             var runid = Guid.NewGuid();
             TestContext.Tags.Add($"runid:{runid}");
+            TestContext.Tags.Add($"version:1");
             TestContext.WriteLine($"before async {runid}");
             await Task.Delay(250);
             TestContext.WriteLine($"after async {runid}");

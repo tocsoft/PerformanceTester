@@ -1,10 +1,9 @@
-﻿using Microsoft.Extensions.ObjectPool;
-using Microsoft.VisualStudio.TestPlatform.ObjectModel.Logging;
+﻿using Microsoft.VisualStudio.TestPlatform.ObjectModel.Logging;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.Text;
 using System.Threading;
+using System.Threading.Tasks;
 
 namespace Tocsoft.PerformanceTester
 {
@@ -41,6 +40,7 @@ namespace Tocsoft.PerformanceTester
             TestContext.context.Value = context;
             return context;
         }
+
         public static ITestContext Start(IMessageLogger messageLogger, AdapterSettings settings)
         {
             var context = new DefaultTestContext(messageLogger, settings);
@@ -55,83 +55,44 @@ namespace Tocsoft.PerformanceTester
                 context.Value = parentContext;
             }
         }
+
+        public static void RegisterCallback(this ITestContext testContext, LifecycleEvent trigger, Action<ITestContext> callback)
+            => testContext.RegisterCallback(trigger, c =>
+            {
+                callback(c);
+                return Task.CompletedTask;
+            });
+
+        private class CallbackKey
+        {
+            public LifecycleEvent Trigger { get; set; }
+        }
+
+        public static void RegisterCallback(this ITestContext testContext, LifecycleEvent trigger, Func<ITestContext, Task> callback)
+        {
+            testContext.Items.Add(new CallbackKey() { Trigger = trigger }, callback);
+        }
+
+        public static async Task RunCallbacks(this ITestContext testContext, LifecycleEvent trigger)
+        {
+            foreach (var kvp in testContext.Items)
+            {
+                if (kvp.Key is CallbackKey key && kvp.Value is Func<ITestContext, Task> func && key.Trigger == trigger)
+                {
+                    await func(testContext);
+                }
+            }
+        }
     }
 
-    public interface ITestContext : IDisposable
+    public enum LifecycleEvent
     {
-        IReadOnlyDictionary<string, string> Parameters { get; }
-
-        IDictionary<object, object> Items { get; }
-
-        IList<string> Tags { get; }
-
-        string Output { get; }
-
-        PerformanceTestCase TestCase { get; }
-
-        bool? IsWarmup { get; }
-
-        void WriteLine(string str);
+        BeforeAll,
+        AfterAll,
+        BeforeTest,
+        AfterTest,
+        BeforeIteration,
+        AfterIteration,
     }
 
-    internal class DefaultTestContext : ITestContext, IDisposable
-    {
-        static ObjectPool<StringBuilder> stringBuilderPool = new DefaultObjectPool<StringBuilder>(new StringBuilderPooledObjectPolicy());
-
-        internal DefaultTestContext(PerformanceTestCase testCase, AdapterSettings settings)
-        {
-            this.sb = stringBuilderPool.Get();
-
-            this.Parameters = settings.TestProperties;
-            IsWarmup = false;
-            TestCase = testCase;
-        }
-
-        internal DefaultTestContext(IMessageLogger messageLogger, AdapterSettings settings)
-        {
-            this.sb = stringBuilderPool.Get();
-            this.Parameters = settings.TestProperties;
-            IsWarmup = false;
-            this.messageLogger = messageLogger;
-        }
-
-        internal DefaultTestContext(PerformanceTestCase testCase, ITestContext parentContext, bool? isWarmup)
-        {
-            this.sb = stringBuilderPool.Get();
-            this.Parameters = parentContext.Parameters;
-            TestCase = testCase;
-            this.parentContext = parentContext;
-            IsWarmup = isWarmup;
-        }
-
-        private StringBuilder sb;
-        private readonly ITestContext parentContext;
-        private readonly IMessageLogger messageLogger;
-
-        public bool? IsWarmup { get; }
-
-        public IReadOnlyDictionary<string, string> Parameters { get; }
-
-        public IDictionary<object, object> Items { get; } = new Dictionary<object, object>();
-
-        public IList<string> Tags { get; } = new List<string>();
-
-        public string Output => sb.ToString();
-
-        public PerformanceTestCase TestCase { get; }
-
-        public void Dispose()
-        {
-            stringBuilderPool.Return(sb);
-            sb = null;
-            TestContext.RevertContext(this, parentContext);
-        }
-
-        public void WriteLine(string str)
-        {
-            sb.AppendLine(str);
-            parentContext?.WriteLine(str);
-            messageLogger?.SendMessage(TestMessageLevel.Informational, str);
-        }
-    }
 }

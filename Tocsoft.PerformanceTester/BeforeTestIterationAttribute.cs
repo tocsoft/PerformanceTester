@@ -6,9 +6,9 @@ using System.Threading.Tasks;
 
 namespace Tocsoft.PerformanceTester
 {
-    public class BeforeTestIterationAttribute : Attribute, IGlobalTestLifecycleFactory
+    public class BeforeTestIterationAttribute : Attribute, ITestLifecycleFactory
     {
-        IEnumerable<ITestLifecycle> IGlobalTestLifecycleFactory.Build(MethodInfo methodInfo)
+        IEnumerable<ITestLifecycle> ITestLifecycleFactory.Build(MethodInfo methodInfo)
         {
             yield return new BeforeAllTestsMethodCall(methodInfo);
         }

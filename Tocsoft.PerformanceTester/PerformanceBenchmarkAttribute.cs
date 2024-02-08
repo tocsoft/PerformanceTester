@@ -24,6 +24,12 @@ namespace Tocsoft.PerformanceTester
         /// <remarks>Leave as zero for single timed exection.</remarks>
         public long ExecutionLength { get; set; } = 0;
 
+        /// <summary>
+        /// Get or set the minimum number of times the test should execute in addition to the warm up tests.
+        /// </summary>
+        /// <remarks>Leave as zero for timed exection only.</remarks>
+        public long ExecutionCount { get; set; } = 0;
+
         public IEnumerable<PerformanceTestCase> Build(MethodInfo methodInfo)
         {
             yield return new PerformanceBenchmarkTestCase(methodInfo, this);

@@ -60,6 +60,7 @@ namespace Tocsoft.PerformanceTester
             using (var executor = new MethodExecuter(this.methodInfo))
             {
                 foreach (var t in beforeTest) { await t.BeforeTest(context); }
+                await context.RunCallbacks(LifecycleEvent.BeforeTest);
 
                 var results = new ConcurrentBag<PerformanceTestIterationResult>();
                 var wc = Math.Max(0, this.settings.WarmUpCount);
@@ -68,6 +69,7 @@ namespace Tocsoft.PerformanceTester
                     using (var subContext = TestContext.Start(this, context, true))
                     {
                         foreach (var t in beforeTestIteration) { await t.BeforeTestIteration(subContext); }
+                        await subContext.RunCallbacks(LifecycleEvent.BeforeIteration);
                         var result = await executor.ExecuteAsync();
                         results.Add(new PerformanceTestIterationResult
                         {
@@ -77,7 +79,9 @@ namespace Tocsoft.PerformanceTester
                             Output = subContext.Output,
                             Tags = subContext.Tags
                         });
+
                         foreach (var t in afterTestIteration) { await t.AfterTestIteration(subContext); }
+                        await subContext.RunCallbacks(LifecycleEvent.AfterIteration);
                     }
                 }
                 var timeout = Stopwatch.StartNew();
@@ -93,6 +97,7 @@ namespace Tocsoft.PerformanceTester
                             using (var subContext = TestContext.Start(this, context, false))
                             {
                                 foreach (var e in beforeTestIteration) { await e.BeforeTestIteration(subContext); }
+                                await subContext.RunCallbacks(LifecycleEvent.BeforeIteration);
                                 var result = await executor.ExecuteAsync(); // should we create an instance across runs??? propably should!
                                 results.Add(new PerformanceTestIterationResult
                                 {
@@ -102,9 +107,11 @@ namespace Tocsoft.PerformanceTester
                                     Output = subContext.Output,
                                     Tags = subContext.Tags
                                 });
+
                                 foreach (var e in afterTestIteration) { await e.AfterTestIteration(subContext); }
+                                await subContext.RunCallbacks(LifecycleEvent.AfterIteration);
                             }
-                        } while (timeout.ElapsedMilliseconds < settings.ExecutionLength);
+                        } while (timeout.ElapsedMilliseconds < settings.ExecutionLength || results.Count < (settings.ExecutionCount + settings.WarmUpCount));
                     });
 
                     tasks.Add(t);
@@ -113,6 +120,7 @@ namespace Tocsoft.PerformanceTester
                 // all executions complete deal with stats etc out side the runners
 
                 foreach (var t in afterTest) { await t.AfterTest(context); }
+                await context.RunCallbacks(LifecycleEvent.AfterTest);
 
                 return results;
             }
