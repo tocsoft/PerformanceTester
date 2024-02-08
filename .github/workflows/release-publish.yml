@@ -41,4 +41,3 @@ jobs:
       shell: pwsh
       run: |
         dotnet nuget push "**/bin/Release/*.nupkg" --api-key "${{ secrets.NUGET_API_KEY }}" --source "https://api.nuget.org/v3/index.json"
-    # TODO publish to nuget.org too

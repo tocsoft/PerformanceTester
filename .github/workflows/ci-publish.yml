@@ -27,12 +27,6 @@ jobs:
       if: success()
       run: dotnet pack --configuration Release
 
-    - name: Ensure GitHub NuGet Source Authenticated
-      shell: pwsh
-      run: |
-        dotnet nuget remove source github
-        dotnet nuget add source https://nuget.pkg.github.com/moodedge/index.json -n github -u ${{ secrets.GPR_USERNAME }} -p ${{ secrets.GPR_PASSWORD }} --store-password-in-clear-text
-
     - name: Configure feed
       if: success()
       run: nuget.exe source Add -Name "GitHub" -Source "https://nuget.pkg.github.com/${{github.actor}}/index.json" -UserName ${{github.actor}} -Password ${{ secrets.GITHUB_TOKEN }}
