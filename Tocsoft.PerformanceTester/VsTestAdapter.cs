@@ -123,9 +123,15 @@ namespace Tocsoft.PerformanceTester
 
         public void RunTests(IEnumerable<TestCase> tests, IRunContext runContext, IFrameworkHandle frameworkHandle)
         {
-            var dir = Directory.GetCurrentDirectory();
 
-            var folder = Path.Combine(dir, "TestResults");
+            var logger = new TestLogger(frameworkHandle);
+            var settings = new AdapterSettings(logger);
+            settings.Load(runContext.RunSettings.SettingsXml);
+            logger.InitSettings(settings);
+
+
+            var folder = settings.ResultsDirectory ?? runContext.TestRunDirectory ?? Path.Combine(Directory.GetCurrentDirectory(), "TestResults");
+            settings.ResultsDirectory = folder;
             Directory.CreateDirectory(folder);
             var file = Path.Combine(folder, $"{Environment.UserName}_{Environment.MachineName}_{DateTime.Now:yyyy-MM-dd_HH_mm_ss}.csv");
 
@@ -133,11 +139,6 @@ namespace Tocsoft.PerformanceTester
             using (var tw = new StreamWriter(fs))
             {
                 tw.WriteCsvLine("Test Name", "Iteration", "Is Warmup", "Duration", "Iteration Status", "Run Status", "Tags");
-
-                var logger = new TestLogger(frameworkHandle);
-                var settings = new AdapterSettings(logger);
-                settings.Load(runContext.RunSettings.SettingsXml);
-                logger.InitSettings(settings);
 
                 frameworkHandle.EnableShutdownAfterTestRun = true;
                 var toRun = Convert(tests);

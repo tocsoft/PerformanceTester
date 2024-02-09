@@ -26,7 +26,7 @@ namespace Tocsoft.PerformanceTester
 
         public int MaxCpuCount { get; private set; }
 
-        public string ResultsDirectory { get; private set; }
+        public string ResultsDirectory { get; internal set; }
 
         public string TargetPlatform { get; private set; }
 

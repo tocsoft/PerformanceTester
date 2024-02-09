@@ -15,7 +15,7 @@ namespace Benchmarking.Benchmarks
         public UnitTest1()
         {
             var context = TestContext.CurrentContext;
-            this.env = context.Parameters["environment"];
+            this.env = context.Properties["environment"];
             context.WriteLine($"Constructor {this.env} {context.IsWarmup}- {Thread.CurrentThread.ManagedThreadId}");
 
             context.RegisterCallback(LifecycleEvent.BeforeIteration, (ctx) =>

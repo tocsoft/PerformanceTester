@@ -13,7 +13,9 @@ namespace Tocsoft.PerformanceTester
 
         public static ITestContext CurrentContext => context.Value;
 
-        public static IReadOnlyDictionary<string, string> Parameters => CurrentContext?.Parameters;
+        public static AdapterSettings Settings => CurrentContext?.Settings;
+
+        public static IReadOnlyDictionary<string, string> Properties => CurrentContext?.Properties;
 
         public static IDictionary<object, object> Items => CurrentContext?.Items;
 

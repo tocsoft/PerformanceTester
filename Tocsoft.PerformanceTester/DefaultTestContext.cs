@@ -2,6 +2,7 @@
 using Microsoft.VisualStudio.TestPlatform.ObjectModel.Logging;
 using System;
 using System.Collections.Generic;
+using System.Runtime;
 using System.Text;
 
 namespace Tocsoft.PerformanceTester
@@ -14,7 +15,7 @@ namespace Tocsoft.PerformanceTester
         {
             this.sb = stringBuilderPool.Get();
 
-            this.Parameters = settings.TestProperties;
+            this.Settings = settings;
             IsWarmup = false;
             TestCase = testCase;
             Items = new Dictionary<object, object>();
@@ -24,23 +25,22 @@ namespace Tocsoft.PerformanceTester
         internal DefaultTestContext(IMessageLogger messageLogger, AdapterSettings settings)
         {
             this.sb = stringBuilderPool.Get();
-            this.Parameters = settings.TestProperties;
             IsWarmup = false;
             this.messageLogger = messageLogger;
             Items = new Dictionary<object, object>();
             Tags = new List<string>();
+            this.Settings = settings;
         }
 
         internal DefaultTestContext(PerformanceTestCase testCase, ITestContext parentContext, bool? isWarmup)
         {
             this.sb = stringBuilderPool.Get();
-            this.Parameters = parentContext.Parameters;
             TestCase = testCase;
             this.parentContext = parentContext;
             IsWarmup = isWarmup;
-
             Items = new Dictionary<object, object>(parentContext.Items);
             Tags = new List<string>(parentContext.Tags);
+            this.Settings = parentContext.Settings;
         }
 
         private StringBuilder sb;
@@ -48,8 +48,10 @@ namespace Tocsoft.PerformanceTester
         private readonly IMessageLogger messageLogger;
 
         public bool? IsWarmup { get; }
+        
+        public AdapterSettings Settings { get; }
 
-        public IReadOnlyDictionary<string, string> Parameters { get; }
+        public IReadOnlyDictionary<string, string> Properties => Settings.TestProperties;
 
         public IDictionary<object, object> Items { get; } = new Dictionary<object, object>();
 

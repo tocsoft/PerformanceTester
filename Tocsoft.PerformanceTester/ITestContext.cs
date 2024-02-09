@@ -5,7 +5,7 @@ namespace Tocsoft.PerformanceTester
 {
     public interface ITestContext : IDisposable
     {
-        IReadOnlyDictionary<string, string> Parameters { get; }
+        IReadOnlyDictionary<string, string> Properties { get; }
 
         IDictionary<object, object> Items { get; }
 
@@ -16,6 +16,8 @@ namespace Tocsoft.PerformanceTester
         PerformanceTestCase TestCase { get; }
 
         bool? IsWarmup { get; }
+
+        AdapterSettings Settings { get; }
 
         void WriteLine(string str);
     }
