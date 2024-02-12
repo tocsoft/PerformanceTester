@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Microsoft.VisualStudio.TestPlatform.ObjectModel;
+using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -75,9 +76,10 @@ namespace Tocsoft.PerformanceTester
                         {
                             Duration = result.Elapsed,
                             Error = result.Error,
+                            Outcome = result.Error == null ? TestOutcome.Passed : TestOutcome.Failed,
                             IsWarmup = true,
                             Output = subContext.Output,
-                            Tags = subContext.Tags
+                            Tags = subContext.Tags.ToArray()
                         });
 
                         foreach (var t in afterTestIteration) { await t.AfterTestIteration(subContext); }
@@ -103,9 +105,10 @@ namespace Tocsoft.PerformanceTester
                                 {
                                     Duration = result.Elapsed,
                                     Error = result.Error,
+                                    Outcome = result.Error == null ? TestOutcome.Passed : TestOutcome.Failed,
                                     IsWarmup = false,
                                     Output = subContext.Output,
-                                    Tags = subContext.Tags
+                                    Tags = subContext.Tags.ToArray()
                                 });
 
                                 foreach (var e in afterTestIteration) { await e.AfterTestIteration(subContext); }

@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using Xunit;
+using System.Linq;
 
 namespace Tocsoft.PerformanceTester.Tests
 {
@@ -20,7 +21,7 @@ namespace Tocsoft.PerformanceTester.Tests
         private readonly Fake<IMessageLogger> logger;
         private readonly Fake<ITestCaseDiscoverySink> sink;
         private readonly List<TestCase> testCases = new List<TestCase>();
-        private TestCase testCase => Assert.Single(testCases);
+        private TestCase testCase => Assert.Single(testCases.Where(x => x.FullyQualifiedName == "Benchmarking.Benchmarks.UnitTest1.Test1"));
 
         public VsTestAdapterITestDiscoverer()
         {
@@ -38,11 +39,11 @@ namespace Tocsoft.PerformanceTester.Tests
         }
 
         [Fact]
-        public void SingleCaseDiscovered()
+        public void AllCasesDiscovered()
         {
             adapter.DiscoverTests(new[] { testAssembleLocation }, discoveryContext.FakedObject, logger.FakedObject, sink.FakedObject);
 
-            Assert.Single(testCases);
+            Assert.Equal(2, testCases.Count);
         }
 
         [Fact]

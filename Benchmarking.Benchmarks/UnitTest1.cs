@@ -39,6 +39,18 @@ namespace Benchmarking.Benchmarks
             await Task.Delay(250);
             TestContext.WriteLine($"after async {runid}");
         }
+
+        [Skipped]
+        [PerformanceBenchmark(WarmUpCount = 3, ExecutionCount = 5, ConcurrancyCount = 1)]
+        public async Task TestSkipped()
+        {
+            var runid = Guid.NewGuid();
+            TestContext.Tags.Add($"runid:{runid}");
+            TestContext.Tags.Add($"version:1");
+            TestContext.WriteLine($"before async {runid}");
+            await Task.Delay(250);
+            TestContext.WriteLine($"after async {runid}");
+        }
     }
 
     public class beforeHook

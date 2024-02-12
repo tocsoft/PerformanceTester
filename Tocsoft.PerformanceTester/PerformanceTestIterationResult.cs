@@ -1,5 +1,7 @@
-﻿using System;
+﻿using Microsoft.VisualStudio.TestPlatform.ObjectModel;
+using System;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace Tocsoft.PerformanceTester
 {
@@ -13,6 +15,8 @@ namespace Tocsoft.PerformanceTester
 
         public string Output { get; set; }
 
-        public IEnumerable<string> Tags { get; set; }
+        public TestOutcome Outcome { get; set; }
+
+        public string[] Tags { get; set; } = Array.Empty<string>();
     }
 }

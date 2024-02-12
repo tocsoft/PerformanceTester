@@ -1,4 +1,5 @@
-﻿using Microsoft.VisualStudio.TestPlatform.ObjectModel.Adapter;
+﻿using HandlebarsDotNet;
+using Microsoft.VisualStudio.TestPlatform.ObjectModel.Adapter;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -107,9 +108,9 @@ namespace Tocsoft.PerformanceTester
 
         public bool PreFilter { get; private set; }
 
-
-
         #endregion
+
+        internal IReadOnlyDictionary<string, Func<TestRunResultContext, string>> TestResultsTemplate { get; private set; }
 
         #region Public Methods
 
@@ -130,6 +131,100 @@ namespace Tocsoft.PerformanceTester
             // file is poorly formed, so we don't need to do anything more.
             var doc = new XmlDocument();
             doc.LoadXml(settingsXml);
+
+            Dictionary<string, string> testRawResultsTemplates = new Dictionary<string, string>();
+            foreach (XmlNode node in doc.SelectNodes("RunSettings/TestResults/Column"))
+            {
+                var key = node.Attributes["name"]?.Value;
+                var template = node.Attributes["template"]?.Value;
+
+                if (key != null && template != null)
+                {
+                    testRawResultsTemplates.Add(key, template);
+                }
+            }
+            if (!testRawResultsTemplates.Any())
+            {
+                // , "", "", "", "Iteration Status", "Run Status", "Tags"
+                testRawResultsTemplates.Add("Test Name", "{{TestCase.Name}}");
+                testRawResultsTemplates.Add("Iteration", "{{RunCount}}");
+                testRawResultsTemplates.Add("Is Warmup", "{{Result.IsWarmup}}");
+                testRawResultsTemplates.Add("Duration", "{{Result.Duration.TotalSeconds}}");
+                testRawResultsTemplates.Add("Iteration Status", "{{Result.Outcome}}");
+                testRawResultsTemplates.Add("Run Status", "{{Outcome}}");
+                testRawResultsTemplates.Add("Tags", "{{#each Result.Tags}}{{this}}{{#unless @last}};{{/unless}}{{/each}}");
+            }
+            var handlbars = Handlebars.Create(new HandlebarsConfiguration());
+            handlbars.RegisterHelper("trimPrefix", (EncodedTextWriter output, Context context, Arguments arguments) =>
+            {
+                var prefix = "";
+                var value = "";
+
+                if (arguments.Length < 2)
+                {
+                    prefix = "";
+                    value = context.Value.ToString();
+                }
+
+                if (arguments.Length == 1)
+                {
+                    prefix = arguments[0].ToString();
+                }
+
+                if (arguments.Length == 2)
+                {
+                    value = arguments[0].ToString();
+                    prefix = arguments[1].ToString();
+                }
+
+                if (value.StartsWith(prefix))
+                {
+                    value = value.Substring(prefix.Length);
+                }
+
+                output.Write(value);
+            });
+
+            handlbars.RegisterHelper("hasPrefix", (EncodedTextWriter output, BlockHelperOptions options, Context context, Arguments arguments) =>
+            {
+                var prefix = "";
+                var value = "";
+
+                if (arguments.Length < 2)
+                {
+                    prefix = "";
+                    value = context.Value.ToString();
+                }
+
+                if (arguments.Length == 1)
+                {
+                    prefix = arguments[0].ToString();
+                }
+
+                if (arguments.Length == 2)
+                {
+                    value = arguments[0].ToString();
+                    prefix = arguments[1].ToString();
+                }
+
+                if (value.StartsWith(prefix))
+                {
+                    options.Template(output, context);
+                }
+            });
+
+            Dictionary<string, Func<TestRunResultContext, string>> dict = testRawResultsTemplates.ToDictionary(x => x.Key, x =>
+            {
+                var compiled = handlbars.Compile(x.Value);
+                Func<TestRunResultContext, string> t = (TestRunResultContext context) =>
+                {
+                    var res = compiled(context);
+                    return res;
+                };
+                return t;
+            });
+
+            TestResultsTemplate = new SafeReadonlyDictionary<string, Func<TestRunResultContext, string>>(dict);
 
             var nunitNode = doc.SelectSingleNode("RunSettings/NUnit");
             Verbosity = GetInnerTextAsInt(nunitNode, nameof(Verbosity), 0);

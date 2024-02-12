@@ -123,22 +123,23 @@ namespace Tocsoft.PerformanceTester
 
         public void RunTests(IEnumerable<TestCase> tests, IRunContext runContext, IFrameworkHandle frameworkHandle)
         {
-
             var logger = new TestLogger(frameworkHandle);
             var settings = new AdapterSettings(logger);
             settings.Load(runContext.RunSettings.SettingsXml);
             logger.InitSettings(settings);
 
-
             var folder = settings.ResultsDirectory ?? runContext.TestRunDirectory ?? Path.Combine(Directory.GetCurrentDirectory(), "TestResults");
             settings.ResultsDirectory = folder;
             Directory.CreateDirectory(folder);
-            var file = Path.Combine(folder, $"{Environment.UserName}_{Environment.MachineName}_{DateTime.Now:yyyy-MM-dd_HH_mm_ss}.csv");
+
+            string runName = $"{Environment.UserName}_{Environment.MachineName}_{DateTime.Now:yyyy-MM-dd_HH_mm_ss}";
+            var file = Path.Combine(folder, $"{runName}.csv");
 
             using (var fs = File.OpenWrite(file))
             using (var tw = new StreamWriter(fs))
             {
-                tw.WriteCsvLine("Test Name", "Iteration", "Is Warmup", "Duration", "Iteration Status", "Run Status", "Tags");
+                tw.WriteCsvLine(settings.TestResultsTemplate.Select(x => x.Key));
+                //tw.WriteCsvLine("Test Name", "Iteration", "Is Warmup", "Duration", "Iteration Status", "Run Status", "Tags");
 
                 frameworkHandle.EnableShutdownAfterTestRun = true;
                 var toRun = Convert(tests);
@@ -169,13 +170,25 @@ namespace Tocsoft.PerformanceTester
                         testResult.Outcome = TestOutcome.Skipped;
                         frameworkHandle.RecordResult(testResult);
 
-                        tw.WriteCsvLine(t.perfTest.Name, "-", "-", "-", "Skipped", "");
+                        var ctx = new TestRunResultContext
+                        {
+                            Result = new PerformanceTestIterationResult
+                            {
+                                Duration = testResult.Duration,
+                                Outcome = TestOutcome.Skipped,
+                            },
+                            Outcome = TestOutcome.Skipped,
+                            TestCase = t.perfTest
+                        };
+
+                        tw.WriteCsvLine(settings, ctx);
+
+                        //tw.WriteCsvLine(runName, t.perfTest.Name, "-", "-", "-", "Skipped", "");
                         continue;
                     }
                     frameworkHandle.RecordStart(t.testCase);
                     using (var context = TestContext.Start(t.perfTest, settings))
                     {
-
                         var sw = Stopwatch.StartNew();
                         var task = t.perfTest.ExecuteAsync(context);
 
@@ -199,12 +212,28 @@ namespace Tocsoft.PerformanceTester
                         int counter = 0;
                         foreach (var r in result.Where(x => x.IsWarmup))
                         {
-                            tw.WriteCsvLine(t.perfTest.Name, ++counter, r.IsWarmup, r.Duration.TotalSeconds, r.Error == null ? TestOutcome.Passed : TestOutcome.Failed, testResult.Outcome, string.Join(";", r.Tags ?? Array.Empty<string>()));
+                            tw.WriteCsvLine(settings, new TestRunResultContext
+                            {
+                                Result = r,
+                                RunCount = ++counter,
+                                TestCase = t.perfTest,
+                                Outcome = testResult.Outcome,
+                            });
+
+                            //tw.WriteCsvLine(t.perfTest.Name, ++counter, r.IsWarmup, r.Duration.TotalSeconds, r.Error == null ? TestOutcome.Passed : TestOutcome.Failed, testResult.Outcome, string.Join(";", r.Tags ?? Array.Empty<string>()));
                         }
                         counter = 0;
                         foreach (var r in result.Where(x => !x.IsWarmup))
                         {
-                            tw.WriteCsvLine(t.perfTest.Name, ++counter, r.IsWarmup, r.Duration.TotalSeconds, r.Error == null ? TestOutcome.Passed : TestOutcome.Failed, testResult.Outcome, string.Join(";", r.Tags ?? Array.Empty<string>()));
+                            tw.WriteCsvLine(settings, new TestRunResultContext
+                            {
+                                Result = r,
+                                RunCount = ++counter,
+                                TestCase = t.perfTest,
+                                Outcome = testResult.Outcome,
+                            });
+
+                            // tw.WriteCsvLine(t.perfTest.Name, ++counter, r.IsWarmup, r.Duration.TotalSeconds, r.Error == null ? TestOutcome.Passed : TestOutcome.Failed, testResult.Outcome, string.Join(";", r.Tags ?? Array.Empty<string>()));
                         }
 
                         // process the results here
@@ -286,8 +315,19 @@ Standard Deviation Duration: {standardDeviation}
 
         public void RunTests(IEnumerable<string> sources, IRunContext runContext, IFrameworkHandle frameworkHandle)
         {
-            var tests = this.DiscoverTests(sources);
+            var tests = this.DiscoverTests(sources).ToList();
             this.RunTests(tests, runContext, frameworkHandle);
         }
+    }
+
+    internal class TestRunResultContext
+    {
+        public PerformanceTestCase TestCase { get; set; }
+
+        public PerformanceTestIterationResult Result { get; set; }
+
+        public int? RunCount { get; set; }
+
+        public TestOutcome Outcome { get; set; } = TestOutcome.None;
     }
 }
