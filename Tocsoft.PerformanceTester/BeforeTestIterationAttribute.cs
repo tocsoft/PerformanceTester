@@ -10,7 +10,7 @@ namespace Tocsoft.PerformanceTester
     {
         IEnumerable<ITestLifecycle> ITestLifecycleFactory.Build(MethodInfo methodInfo)
         {
-            yield return new BeforeAllTestsMethodCall(methodInfo);
+            yield return new BeforeTestIterationAttributeMethodCall(methodInfo);
         }
     }
 

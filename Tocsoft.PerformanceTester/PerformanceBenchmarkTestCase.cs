@@ -100,7 +100,7 @@ namespace Tocsoft.PerformanceTester
                             {
                                 foreach (var e in beforeTestIteration) { await e.BeforeTestIteration(subContext); }
                                 await subContext.RunCallbacks(LifecycleEvent.BeforeIteration);
-                                var result = await executor.ExecuteAsync(); // should we create an instance across runs??? propably should!
+                                var result = await executor.ExecuteAsync(); // should we create an instance across runs??? probably should!
                                 results.Add(new PerformanceTestIterationResult
                                 {
                                     Duration = result.Elapsed,
