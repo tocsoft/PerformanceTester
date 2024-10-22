@@ -58,33 +58,42 @@ namespace Tocsoft.PerformanceTester
             var afterTestIteration = testLifecycles.OfType<ITestLifecycleAfterTestIteration>().ToArray();
             var beforeTestIteration = testLifecycles.OfType<ITestLifecycleBeforeTestIteration>().ToArray();
 
+            var results = new ConcurrentBag<PerformanceTestIterationResult>();
+
             using (var executor = new MethodExecuter(this.methodInfo))
             {
-                foreach (var t in beforeTest) { await t.BeforeTest(context); }
-                await context.RunCallbacks(LifecycleEvent.BeforeTest);
-
-                var results = new ConcurrentBag<PerformanceTestIterationResult>();
-                var wc = Math.Max(0, this.settings.WarmUpCount);
-                for (var i = 0; i < wc; i++)
+                async Task RunIteration(bool warmup)
                 {
-                    using (var subContext = TestContext.Start(this, context, true))
+                    using (var subContext = TestContext.Start(this, context, warmup))
                     {
                         foreach (var t in beforeTestIteration) { await t.BeforeTestIteration(subContext); }
                         await subContext.RunCallbacks(LifecycleEvent.BeforeIteration);
                         var result = await executor.ExecuteAsync();
-                        results.Add(new PerformanceTestIterationResult
+                        var finalResult = new PerformanceTestIterationResult
                         {
                             Duration = result.Elapsed,
                             Error = result.Error,
                             Outcome = result.Error == null ? TestOutcome.Passed : TestOutcome.Failed,
-                            IsWarmup = true,
+                            IsWarmup = warmup,
                             Output = subContext.Output,
                             Tags = subContext.Tags.ToArray()
-                        });
+                        };
+                        results.Add(finalResult);
+
+                        subContext.Items[typeof(PerformanceTestIterationResult)] = finalResult;
 
                         foreach (var t in afterTestIteration) { await t.AfterTestIteration(subContext); }
                         await subContext.RunCallbacks(LifecycleEvent.AfterIteration);
                     }
+                }
+
+                foreach (var t in beforeTest) { await t.BeforeTest(context); }
+                await context.RunCallbacks(LifecycleEvent.BeforeTest);
+
+                var wc = Math.Max(0, this.settings.WarmUpCount);
+                for (var i = 0; i < wc; i++)
+                {
+                    await RunIteration(warmup: true);
                 }
                 var timeout = Stopwatch.StartNew();
                 var tasks = new List<Task>();
@@ -96,24 +105,7 @@ namespace Tocsoft.PerformanceTester
                     {
                         do
                         {
-                            using (var subContext = TestContext.Start(this, context, false))
-                            {
-                                foreach (var e in beforeTestIteration) { await e.BeforeTestIteration(subContext); }
-                                await subContext.RunCallbacks(LifecycleEvent.BeforeIteration);
-                                var result = await executor.ExecuteAsync(); // should we create an instance across runs??? probably should!
-                                results.Add(new PerformanceTestIterationResult
-                                {
-                                    Duration = result.Elapsed,
-                                    Error = result.Error,
-                                    Outcome = result.Error == null ? TestOutcome.Passed : TestOutcome.Failed,
-                                    IsWarmup = false,
-                                    Output = subContext.Output,
-                                    Tags = subContext.Tags.ToArray()
-                                });
-
-                                foreach (var e in afterTestIteration) { await e.AfterTestIteration(subContext); }
-                                await subContext.RunCallbacks(LifecycleEvent.AfterIteration);
-                            }
+                            await RunIteration(warmup: false);
                         } while (timeout.ElapsedMilliseconds < settings.ExecutionLength || results.Count < (settings.ExecutionCount + settings.WarmUpCount));
                     });
 

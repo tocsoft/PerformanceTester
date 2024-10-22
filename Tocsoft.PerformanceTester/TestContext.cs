@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -77,12 +78,18 @@ namespace Tocsoft.PerformanceTester
 
         public static async Task RunCallbacks(this ITestContext testContext, LifecycleEvent trigger)
         {
+            List<Func<ITestContext, Task>> _callbacks = new List<Func<ITestContext, Task>>();
             foreach (var kvp in testContext.Items)
             {
                 if (kvp.Key is CallbackKey key && kvp.Value is Func<ITestContext, Task> func && key.Trigger == trigger)
                 {
-                    await func(testContext);
+                    _callbacks.Add(func);
                 }
+            }
+
+            foreach(var func in _callbacks)
+            {
+                await func(testContext);
             }
         }
     }
