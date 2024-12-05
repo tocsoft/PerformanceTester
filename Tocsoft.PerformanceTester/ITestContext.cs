@@ -11,6 +11,8 @@ namespace Tocsoft.PerformanceTester
 
         IList<string> Tags { get; }
 
+        IDictionary<string, string> MetaData { get; }
+
         string Output { get; }
 
         PerformanceTestCase TestCase { get; }

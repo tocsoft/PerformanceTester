@@ -18,5 +18,7 @@ namespace Tocsoft.PerformanceTester
         public TestOutcome Outcome { get; set; }
 
         public string[] Tags { get; set; } = Array.Empty<string>();
+
+        public IReadOnlyDictionary<string, string> MetaData { get; set; } = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
     }
 }

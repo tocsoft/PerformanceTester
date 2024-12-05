@@ -20,6 +20,7 @@ namespace Tocsoft.PerformanceTester
             TestCase = testCase;
             Items = new Dictionary<object, object>();
             Tags = new List<string>();
+            MetaData = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
         }
 
         internal DefaultTestContext(IMessageLogger messageLogger, AdapterSettings settings)
@@ -29,6 +30,7 @@ namespace Tocsoft.PerformanceTester
             this.messageLogger = messageLogger;
             Items = new Dictionary<object, object>();
             Tags = new List<string>();
+            MetaData = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
             this.Settings = settings;
         }
 
@@ -40,6 +42,7 @@ namespace Tocsoft.PerformanceTester
             IsWarmup = isWarmup;
             Items = new Dictionary<object, object>(parentContext.Items);
             Tags = new List<string>(parentContext.Tags);
+            MetaData = new Dictionary<string, string>(parentContext.MetaData, StringComparer.OrdinalIgnoreCase);
             this.Settings = parentContext.Settings;
         }
 
@@ -56,6 +59,8 @@ namespace Tocsoft.PerformanceTester
         public IDictionary<object, object> Items { get; } = new Dictionary<object, object>();
 
         public IList<string> Tags { get; } = new List<string>();
+
+        public IDictionary<string, string> MetaData { get; } = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
 
         public string Output => sb.ToString();
 

@@ -68,7 +68,7 @@ namespace Tocsoft.PerformanceTester
                     {
                         foreach (var t in beforeTestIteration) { await t.BeforeTestIteration(subContext); }
                         await subContext.RunCallbacks(LifecycleEvent.BeforeIteration);
-                        var result = await executor.ExecuteAsync();
+                        var result = await executor.ExecuteAsync(subContext);
                         var finalResult = new PerformanceTestIterationResult
                         {
                             Duration = result.Elapsed,
@@ -76,7 +76,8 @@ namespace Tocsoft.PerformanceTester
                             Outcome = result.Error == null ? TestOutcome.Passed : TestOutcome.Failed,
                             IsWarmup = warmup,
                             Output = subContext.Output,
-                            Tags = subContext.Tags.ToArray()
+                            Tags = subContext.Tags.ToArray(),
+                            MetaData = new Dictionary<string, string>(subContext.MetaData, StringComparer.OrdinalIgnoreCase),
                         };
                         results.Add(finalResult);
 
@@ -142,12 +143,15 @@ namespace Tocsoft.PerformanceTester
 
         private readonly ObjectMethodExecutor executor;
         private object instance;
+        private readonly ParameterInfo[] paramaters;
+        private bool injectContext = false;
 
         public MethodExecuter(MethodInfo methodInfo)
         {
             this.targetType = methodInfo.ReflectedType;
             this.executor = ObjectMethodExecutor.Create(methodInfo, targetType.GetTypeInfo());
             this.instance = targetType.GetInstance();
+            this.paramaters = methodInfo.GetParameters();
         }
 
         public void Dispose()
@@ -166,21 +170,41 @@ namespace Tocsoft.PerformanceTester
             }
         }
 
-        public async Task<MethodExecuterResult> ExecuteAsync(bool throwException = false)
+        public async Task<MethodExecuterResult> ExecuteAsync(ITestContext testContext, bool throwException = false)
         {
             Exception error = null;
 
             var sw = Stopwatch.StartNew();
             try
             {
+                var args = emptyArgs;
+                if (paramaters.Length > 0)
+                {
+                    args = new object[this.paramaters.Length];
+                    for (int i = 0; i < this.paramaters.Length; i++)
+                    {
+                        var target = this.paramaters[i].ParameterType;
+                        if (target == typeof(ITestContext))
+                        {
+                            args[i] = testContext;
+                        }
+                        else
+                        {
+                            if (testContext.Items.TryGetValue(target, out var val) && target.IsAssignableFrom(val.GetType()))
+                            {
+                                args[i] = val;
+                            }
+                        }
+                    }
+                }
 
                 if (executor.IsMethodAsync)
                 {
-                    await executor.ExecuteAsync(instance, emptyArgs);
+                    await executor.ExecuteAsync(instance, args);
                 }
                 else
                 {
-                    executor.Execute(instance, emptyArgs);
+                    executor.Execute(instance, args);
                 }
 
                 sw.Stop();

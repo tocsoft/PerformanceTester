@@ -27,7 +27,7 @@ namespace Tocsoft.PerformanceTester
         {
             using (var executor = new MethodExecuter(methodInfo))
             {
-                return executor.ExecuteAsync(true);
+                return executor.ExecuteAsync(iterationContext, true);
             }
         }
     }
