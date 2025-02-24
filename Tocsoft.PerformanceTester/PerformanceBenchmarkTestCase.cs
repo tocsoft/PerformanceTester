@@ -24,7 +24,7 @@ namespace Tocsoft.PerformanceTester
         public override string Name => $"{methodInfo.DeclaringType.FullName}.{methodInfo.Name}";
         public override string DisplayName => $"{methodInfo.DeclaringType.FullName}.{methodInfo.Name}";
         public override string UniqueName => $"{methodInfo.DeclaringType.FullName}.{methodInfo.Name}()";
-        public override IEnumerable<ITestLifecycle> BuildLifeTimeEvents()
+        protected override IEnumerable<ITestLifecycle> BuildLifeTimeEvents()
         {
             var methods = methodInfo.ReflectedType
                             .GetRuntimeMethods();
@@ -35,10 +35,10 @@ namespace Tocsoft.PerformanceTester
                     continue;
                 }
 
-                var factories = m.GetCustomAttributes()
+                var factories2 = m.GetCustomAttributes()
                     .OfType<ITestLifecycleFactory>();
 
-                foreach (var f in factories)
+                foreach (var f in factories2)
                 {
                     var eventhandlers = f.Build(m);
                     foreach (var h in eventhandlers)
@@ -47,9 +47,21 @@ namespace Tocsoft.PerformanceTester
                     }
                 }
             }
+
+            var factories = methodInfo.GetCustomAttributes()
+               .OfType<ILocalTestLifecycleFactory>();
+
+            foreach (var lf in factories)
+            {
+                var eventhandlers = lf.Build(methodInfo);
+                foreach (var h in eventhandlers)
+                {
+                    yield return h;
+                }
+            }
         }
 
-        public override async Task<IEnumerable<PerformanceTestIterationResult>> ExecuteAsync(ITestContext context)
+        internal override async Task<IEnumerable<PerformanceTestIterationResult>> ExecuteAsync(ITestContext context)
         {
             IEnumerable<ITestLifecycle> testLifecycles = BuildLifeTimeEvents();
 

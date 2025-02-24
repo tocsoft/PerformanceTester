@@ -15,6 +15,11 @@ namespace Tocsoft.PerformanceTester
         IEnumerable<ITestLifecycle> Build(MethodInfo methodInfo);
     }
 
+    public interface ILocalTestLifecycleFactory
+    {
+        IEnumerable<ITestLifecycle> Build(MethodInfo methodInfo);
+    }
+
     public interface ITestLifecycle
     {
     }

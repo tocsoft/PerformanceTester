@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace Tocsoft.PerformanceTester
 {
-    public class TagAttribute : Attribute, ITestLifecycleFactory, ITestLifecycleBeforeTest
+    public class TagAttribute : Attribute, ILocalTestLifecycleFactory, ITestLifecycleBeforeTest
     {
         public string[] Tags { get; set; }
         public TagAttribute(params string[] tags)
@@ -14,7 +14,7 @@ namespace Tocsoft.PerformanceTester
             Tags = tags;
         }
 
-        IEnumerable<ITestLifecycle> ITestLifecycleFactory.Build(MethodInfo methodInfo)
+        IEnumerable<ITestLifecycle> ILocalTestLifecycleFactory.Build(MethodInfo methodInfo)
         {
             yield return this;
         }
